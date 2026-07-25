@@ -1,0 +1,45 @@
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editors / IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Local env and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+credentials/
+
+# Logs and temp
+logs/
+*.log
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Local overrides
+*.local
+
+# Archives and dumps
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+*.sql
+*.dump
+
+# Coverage / reports (generic)
+coverage/
+reports/
+.cache/
