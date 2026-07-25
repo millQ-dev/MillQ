@@ -1,0 +1,94 @@
+name: Architecture
+description: Propose or request an architecture decision that may require an ADR.
+title: "[Architecture]: "
+labels:
+  - architecture
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for architectural problems and decisions.
+        Significant decisions must be recorded as ADRs under `docs/decisions/` once accepted.
+        Do not select a technology stack unless the decision is explicitly in scope and approved.
+  - type: textarea
+    id: problem-or-decision
+    attributes:
+      label: Problem or decision
+      description: What architectural problem must be solved, or what decision is needed?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Background, current state, and why this decision matters now.
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints
+      description: Hard constraints from charter, product scope, operations, compliance, or existing architecture.
+      placeholder: Modular monolith first, monorepo, auditability, Vietnam localization, MVP scope, etc.
+    validations:
+      required: true
+  - type: textarea
+    id: considered-options
+    attributes:
+      label: Considered options
+      description: List realistic options under consideration.
+      placeholder: |
+        - Option A:
+        - Option B:
+        - Option C:
+    validations:
+      required: true
+  - type: textarea
+    id: trade-offs
+    attributes:
+      label: Trade-offs
+      description: Pros, cons, and risks for each option.
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-direction
+    attributes:
+      label: Proposed direction
+      description: Recommended option and why, if a recommendation exists.
+    validations:
+      required: true
+  - type: textarea
+    id: affected-domains
+    attributes:
+      label: Affected domains
+      description: Which domains or module boundaries are affected?
+      placeholder: Inventory, recipes, sales, costing, identity, etc.
+    validations:
+      required: true
+  - type: textarea
+    id: migration-impact
+    attributes:
+      label: Migration impact
+      description: Data, API, deployment, or operational migration implications.
+      placeholder: State expected migrations, compatibility concerns, or none.
+    validations:
+      required: true
+  - type: textarea
+    id: security-and-data-integrity-impact
+    attributes:
+      label: Security and data integrity impact
+      description: Effects on access control, audit trails, transactional integrity, and idempotency.
+    validations:
+      required: true
+  - type: dropdown
+    id: adr-requirement
+    attributes:
+      label: ADR requirement
+      description: Does this decision require an Architecture Decision Record?
+      options:
+        - Yes — ADR required before implementation
+        - Likely — draft ADR expected during design
+        - No — reversible/local decision; ADR not required
+        - Unclear — needs architect review
+    validations:
+      required: true
