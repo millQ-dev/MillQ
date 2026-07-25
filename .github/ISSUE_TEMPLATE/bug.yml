@@ -1,0 +1,100 @@
+name: Bug
+description: Report a defect affecting MillQ behavior, data integrity, or workflows.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for defects only.
+        Include enough detail for reproduction and impact assessment. Follow `PROJECT_CHARTER.md` and `AGENTS.md`.
+  - type: textarea
+    id: problem-description
+    attributes:
+      label: Problem description
+      description: Concise summary of the defect.
+      placeholder: What is broken, and who/what is affected?
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: What should happen according to confirmed product rules?
+    validations:
+      required: true
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual behavior
+      description: What happens instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: Reproduction steps
+      description: Minimal steps to reproduce the issue.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Where the issue was observed.
+      placeholder: |
+        - App / service:
+        - Version / commit:
+        - Restaurant / tenant (if applicable):
+        - Device / OS / browser (if applicable):
+        - Network conditions (if relevant):
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: Impact severity for operations and data.
+      options:
+        - Blocker — cannot operate critical flow
+        - High — major workflow broken or wrong financial/inventory outcome
+        - Medium — workaround exists; limited impact
+        - Low — minor inconvenience or cosmetic defect
+    validations:
+      required: true
+  - type: textarea
+    id: affected-business-flow
+    attributes:
+      label: Affected business flow
+      description: Which MillQ operational flow is affected?
+      placeholder: Example — Goods Receipt → Sale → Automatic Write-off → Food Cost Report
+    validations:
+      required: true
+  - type: textarea
+    id: data-integrity-impact
+    attributes:
+      label: Data integrity impact
+      description: Impact on inventory balances, costs, audits, or financial records.
+      placeholder: State known or suspected data impact, or confirm none observed.
+    validations:
+      required: true
+  - type: textarea
+    id: logs-or-screenshots
+    attributes:
+      label: Logs or screenshots
+      description: Attach or paste relevant logs, screenshots, request IDs, or error messages.
+    validations:
+      required: false
+  - type: textarea
+    id: regression-test-expectations
+    attributes:
+      label: Regression test expectations
+      description: What automated or manual regression coverage should prevent recurrence?
+      placeholder: Describe the expected test case(s).
+    validations:
+      required: true

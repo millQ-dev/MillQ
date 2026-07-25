@@ -1,0 +1,93 @@
+name: Feature
+description: Propose a new product capability or enhancement aligned with MillQ scope.
+title: "[Feature]: "
+labels:
+  - feature
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for product features and enhancements.
+        Follow `PROJECT_CHARTER.md` and `AGENTS.md`. Do not invent business rules.
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What outcome should this feature achieve?
+      placeholder: Describe the intended business or operational outcome.
+    validations:
+      required: true
+  - type: textarea
+    id: user-scenario
+    attributes:
+      label: User scenario
+      description: Who is the user, what do they need to do, and in what context?
+      placeholder: As a [role], I need to [action], so that [outcome].
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What is included in this change?
+      placeholder: List concrete capabilities and boundaries included in this issue.
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: What must explicitly not be included?
+      placeholder: List deferred or excluded items.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      description: Measurable conditions that define done for this feature.
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+    validations:
+      required: true
+  - type: textarea
+    id: business-rules
+    attributes:
+      label: Business rules
+      description: Known product rules that must be followed. Escalate if unclear; do not invent rules.
+      placeholder: List confirmed rules, or state what needs clarification.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Upstream work, systems, data, or decisions this feature depends on.
+      placeholder: Issues, ADRs, domains, or external constraints.
+    validations:
+      required: false
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks
+      description: Product, operational, data integrity, or delivery risks.
+      placeholder: Describe risks and possible mitigations.
+    validations:
+      required: true
+  - type: textarea
+    id: testing-considerations
+    attributes:
+      label: Testing considerations
+      description: What must be tested, including restaurant-domain cases when applicable.
+      placeholder: Rounding, units, inventory, write-offs, retries, concurrency, offline/reconnect, etc.
+    validations:
+      required: true
+  - type: textarea
+    id: documentation-impact
+    attributes:
+      label: Documentation impact
+      description: Which docs need updates (product, architecture, decisions, processes, glossary)?
+      placeholder: List expected documentation updates, or state none.
+    validations:
+      required: true
