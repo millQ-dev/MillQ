@@ -1,6 +1,6 @@
 # ADR-0001: Initial technology stack
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-25
 - **Decision owners:** Product ownership and System Architect (approval required before implementation)
 - **Related issue:** [#6 — Select the initial technology stack](https://github.com/millQ-dev/MillQ/issues/6)
