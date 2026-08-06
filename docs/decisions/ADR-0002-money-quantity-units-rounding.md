@@ -4,6 +4,7 @@
 - **Date:** 2026-08-06
 - **Decision owners:** Product Owner and System Architect
 - **Related issue:** [#9 — Define money, units, yield and moving-average costing](https://github.com/millQ-dev/MillQ/issues/9)
+- **Product Owner correction:** [Block A correction decisions](https://github.com/millQ-dev/MillQ/issues/9#issuecomment-5205173415)
 - **Related analysis:** [`block-a-money-units-yield-costing-analysis.md`](../architecture/block-a-money-units-yield-costing-analysis.md)
 - **Depends on:** [ADR-0001 — Initial technology stack](ADR-0001-initial-technology-stack.md)
 
@@ -18,7 +19,7 @@ The model must therefore distinguish:
 - quantities and conversion factors;
 - rates such as price per unit, cost per unit, and yield.
 
-This ADR does not define tax, fiscal/e-invoice, cash denomination, or foreign-exchange accounting rules.
+This ADR does not define tax, fiscal/e-invoice, cash denomination, or foreign-exchange accounting rules. Product Owner direction explicitly forbids a universal legally significant rounding rule: official rounding must be selected by jurisdiction and calculation context after dedicated research.
 
 ## Decision
 
@@ -75,7 +76,7 @@ This allows `121.212121... VND/g` to remain accurate without pretending that a c
 - ISO 4217 currency code, numeric code, minor-unit exponent, effective interval, and source version are reference data.
 - Persisted financial facts capture code and exponent.
 - VND is the Vietnam onboarding default and currently uses exponent `0`.
-- ISO exponent controls currency quantum and default display, not legal cash rounding, tax rounding, or fiscal-invoice behavior.
+- ISO exponent supplies currency metadata and default display precision. It does not, by itself, authorize a legal line, document, tax, discount, payment, cash, or fiscal-invoice rounding rule.
 
 ### 4. One inventory ledger uses one valuation currency
 
@@ -91,25 +92,25 @@ No helper may expose a generic implicit `roundMoney()` or silently apply UI prec
 
 #### Posted commercial calculations
 
-When MillQ itself must calculate a posted customer/supplier amount:
+MillQ has no universal official-money rounding mode. When MillQ itself must calculate a legally or commercially significant customer/supplier amount:
 
 - calculate with exact decimal intermediates;
-- round once at the specified line/document boundary to the currency quantum;
-- rounding mode: nearest, ties away from zero;
+- require a versioned `RoundingPolicy` selected by jurisdiction, legal entity, calculation context, and effective period;
+- let that approved policy define the boundary, currency/settlement quantum, mode, and allocation behavior;
 - preserve the unrounded basis and applied rounding delta for audit where the result is financially material.
 
-Imported/accepted source-document totals remain source facts and are not retrospectively recomputed after a rule change.
+Until a required country/context policy is approved, MillQ must not invent or post the corresponding official calculation. Imported/accepted source-document totals remain source facts and are not retrospectively recomputed after a policy change.
 
 #### Allocation
 
-When a fixed posted total must be split across lines:
+When an already authoritative fixed total must be split across lines and the applicable policy permits proportional largest-remainder allocation:
 
 1. calculate exact shares;
 2. take each share toward zero to currency minor units;
 3. distribute the remaining minor units by largest absolute remainder;
 4. break equal remainders by a stable line sequence captured on the document.
 
-The allocated lines must sum exactly to the posted total for positive and negative documents.
+The allocated lines must sum exactly to the posted total for positive and negative documents. A jurisdiction/context policy may require another compliant allocation method; the method and policy version must then be stored on the result.
 
 #### Internal costing
 
@@ -117,6 +118,8 @@ The allocated lines must sum exactly to the posted total for positive and negati
 - persist `CostValue` at 12 sub-minor digits using nearest, ties to even;
 - do not round a unit cost for display and then reuse it in calculation;
 - when stock quantity reaches zero, assign any remaining cost quantum to the final issue so carrying value also becomes exactly zero.
+
+This is a technical inventory-calculation precision rule, not an official-money, tax, cash, or fiscal rounding rule.
 
 #### Display
 
@@ -133,7 +136,7 @@ Display formatting never changes the stored value. A screen or report may show f
 
 Each stock item has one base unit. After its first posted movement, changing the base unit requires an explicit migration that preserves all historical base quantities and factors.
 
-A count item can be marked `DISCRETE`. A discrete item rejects fractional base quantity.
+`COUNT`/`ea` is allowed as the base unit only when the product is genuinely consumed as whole pieces in recipes and inventory operations. Count-based stock is discrete and rejects fractional base quantity. A product normally consumed in parts must use a mass or volume base unit even if suppliers deliver it as bottles, pieces, or packs.
 
 ### 7. Measurement precision is separate from storage precision
 
@@ -148,15 +151,17 @@ A count item can be marked `DISCRETE`. A discrete item rejects fractional base q
 - Same-dimension conversion is allowed when configured.
 - Cross-dimension conversion is rejected by default.
 - Cross-dimension conversion requires an item-specific, versioned measured rule. MillQ never assumes water density for arbitrary products.
-- A package is a purchasing/operational presentation containing an exact amount of the item's base unit.
-- Editing package content creates a new version; it does not change posted documents.
+- `Package` is a supplier/purchasing presentation. `InventoryUnit` is the item's base unit in which stock is actually held. They are different concepts.
+- A fixed package may define an exact factor into the inventory unit: `6 × 1 L` milk bottles post `6 L`; `12 × 0.75 L` oil bottles post `9 L`.
+- Variable-weight packages are mandatory. For example, four meat packs actually accepted at `18.7 kg` post `18.7 kg`; pack count and expected/label weight are supporting facts, not substitutes for accepted base quantity.
+- Editing a fixed package factor or supplier presentation creates a new version; it does not change posted documents.
 
 Every posted line that uses a non-base unit captures:
 
 - entered quantity and unit;
 - conversion/package version;
-- factor snapshot;
-- calculated base quantity;
+- factor snapshot for a fixed package/conversion, or the measurement evidence for a variable-weight package;
+- actual accepted base quantity (measured at receipt for variable-weight packages, calculated for fixed packages);
 - quantization delta, if any.
 
 ### 9. Recipe scaling does not materialize rounded copies
@@ -177,9 +182,12 @@ The normalized cost must therefore remain unchanged for every proportionally sca
 4. Allocated line amounts sum exactly to their posted total.
 5. `Quantity` conversions require compatible dimensions unless an item-specific rule exists.
 6. Posted lines remain interpretable after package, unit, or currency reference data changes.
-7. A discrete count item has integral base quantity.
-8. Display rounding never feeds domain calculation.
-9. Proportional recipe scaling never changes normalized unit cost.
+7. Supplier package and inventory unit are never the same concept by implication.
+8. Variable-weight receiving stores actual accepted base quantity.
+9. Count-based inventory is integral and is used only for products consumed as whole pieces.
+10. Display rounding never feeds domain calculation.
+11. Proportional recipe scaling never changes normalized unit cost.
+12. No official calculation is posted without an approved jurisdiction/context rounding policy where one is required.
 
 ## Alternatives considered
 
@@ -227,26 +235,35 @@ When implementation is authorized, tests must include:
 
 1. Decimal serialization round-trip and negative-zero normalization.
 2. Rejecting float input and overprecision at domain boundaries.
-3. VND and two-/three-decimal currency examples.
-4. Positive and negative largest-remainder allocation with stable ties.
-5. `1 case × 12 bottles × 330 ml = 3960 ml` with factor snapshots.
-6. Rejection of kg-to-L conversion without an item-specific rule.
-7. Discrete count rejection of fractional each.
-8. Package version change leaving historical lines unchanged.
-9. Property-based proportional recipe scaling over positive decimal factors.
-10. Database/application parity for every rounding mode.
+3. VND and two-/three-decimal currency storage examples without assuming official rounding behavior.
+4. Rejection of an official calculation when its required jurisdiction/context `RoundingPolicy` is missing.
+5. Positive and negative largest-remainder allocation under a policy that explicitly selects it.
+6. `6 × 1 L = 6 L` and `12 × 0.75 L = 9 L` with fixed-package snapshots.
+7. Four variable-weight meat packages posting their measured `18.7 kg` rather than a nominal pack factor.
+8. Rejection of kg-to-L conversion without an item-specific rule.
+9. Rejection of fractional each and rejection of `ea` as the base unit for a routinely partially consumed product.
+10. Package version change leaving historical lines unchanged.
+11. Property-based proportional recipe scaling over positive decimal factors.
+12. Database/application parity for each approved rounding policy and for internal cost precision.
 
-## Owner/architect acceptance checklist
+## Product Owner directions incorporated
+
+- [x] Supplier `Package` and `InventoryUnit` are different concepts.
+- [x] Variable-weight receiving stores actual accepted quantity.
+- [x] `COUNT`/`ea` is limited to products genuinely consumed as whole pieces.
+- [x] No universal legally significant rounding rule is defined.
+
+## Remaining owner/architect acceptance checklist
 
 - [ ] Accept posted `Money` as integer minor units with captured ISO exponent.
 - [ ] Accept derived `CostValue` with 12 sub-minor digits.
 - [ ] Accept `NUMERIC(38, 12)` quantity and 18-decimal rate targets.
 - [ ] Accept canonical decimal strings in REST/JSON.
-- [ ] Accept ties-away-from-zero for system-calculated posted money.
-- [ ] Accept ties-to-even at the 12-digit internal cost boundary.
-- [ ] Accept largest-remainder allocation and stable tie-breaking.
+- [ ] Accept versioned jurisdiction/context `RoundingPolicy` as the required official-calculation boundary.
+- [ ] Accept ties-to-even at the 12-digit internal cost boundary as a technical, non-legal rule.
+- [ ] Accept largest-remainder allocation only when selected by the applicable policy.
 - [ ] Accept one valuation currency per inventory ledger.
-- [ ] Accept `MASS`/`VOLUME`/`COUNT`, immutable item base unit, and explicit package versions.
+- [ ] Accept `MASS`/`VOLUME`/`COUNT`, immutable item base unit, fixed and variable package handling, and explicit package versions.
 - [ ] Accept item-specific cross-dimension conversions only.
 - [ ] Accept the no-early-rounding recipe scaling rule.
 

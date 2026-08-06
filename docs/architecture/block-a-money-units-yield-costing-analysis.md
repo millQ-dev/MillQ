@@ -1,8 +1,9 @@
 # Block A Analysis: Money, Units, Yield, and Costing
 
-- **Status:** Ready for owner/architect review; no decision in this document is accepted yet
+- **Status:** Revision 2 ready for owner/architect review; ADR-0002 and ADR-0003 remain Proposed
 - **Date:** 2026-08-06
 - **Related issue:** [#9 — Define money, units, yield and moving-average costing](https://github.com/millQ-dev/MillQ/issues/9)
+- **Product Owner correction:** [Block A correction decisions](https://github.com/millQ-dev/MillQ/issues/9#issuecomment-5205173415)
 - **Proposed decisions:** [ADR-0002](../decisions/ADR-0002-money-quantity-units-rounding.md), [ADR-0003](../decisions/ADR-0003-yield-preparations-moving-average-costing.md)
 - **Scope:** Architecture and domain rules only. No restaurant application feature implementation.
 
@@ -14,16 +15,19 @@ The recommended direction is:
 
 1. Do not use JavaScript `number` for money, quantities, conversion factors, or cost calculations.
 2. Persist posted financial amounts as integer currency minor units, with currency code and minor-unit exponent captured on the fact.
-3. Keep derived inventory carrying value with sub-minor precision so allocation does not lose value; round only at named boundaries.
+3. Keep derived inventory carrying value with sub-minor precision so allocation does not lose value; official rounding requires a versioned jurisdiction/context policy.
 4. Exchange all domain decimals through APIs as canonical strings.
 5. Give every stock item one immutable base unit and a typed dimension: mass, volume, or count.
-6. Treat packages as versioned conversions into the base unit, not as independent stock quantities.
+6. Separate supplier package from inventory unit; support fixed packages and mandatory actual quantity for variable-weight packages.
 7. Separate normative `PreparationSpecification` from actual `ProductionBatch`.
 8. Use the batch's actual output for actual unit cost; use normative output only for planning.
 9. Use moving weighted average per warehouse, stock item, and valuation currency.
-10. Keep negative-stock costs provisional and visibly flagged; later covering receipts or backdated facts create audited cost revisions.
+10. Value a negative-stock sale from the last known cost at its business position; a genuinely later receipt never rewrites it, while a late-entered historical fact can trigger audited replay.
 11. Never rewrite business movements during recalculation. Append a new calculation revision and preserve the previous result.
-12. Explicitly choose either virtual recursive preparation or stock-tracked production for each consumption path, never both.
+12. Order costing by real business chronology, never server arrival/upload order, and preserve same-time business order through offline synchronization.
+13. Explicitly choose either virtual recursive preparation or stock-tracked production for each consumption path, never both.
+14. Treat a preorder as non-costing: inventory cost is determined only at actual sale/write-off.
+15. Never recalculate old sales merely because a new recipe/preparation version was created.
 
 The numerical model is proposed for acceptance. Vietnam accounting treatment, tax/fiscal rounding, cash denomination rounding, foreign-exchange accounting, and closed-period correction policy still require dedicated local verification.
 
@@ -74,15 +78,16 @@ Public iiko documentation presents ingredient unit cost, recipe cost, and wareho
 - `CostValue` (derived carrying value): exact decimal expressed in the same minor-unit coordinate, with 12 fractional digits.
 - `Rate` (unit price, unit cost, yield, conversion): exact decimal, with up to 18 fractional digits where division requires it.
 - API and event contracts carry these values as canonical decimal strings, never JSON numbers.
-- VND onboarding default: `VND`, exponent `0`; system-calculated commercial totals round to whole VND only at the approved financial boundary.
+- VND onboarding default: `VND`, exponent `0`; ISO metadata does not itself authorize an official rounding rule.
 - Stock is valued in one ledger currency. Original foreign-currency amount and the accepted conversion snapshot remain separate facts; currencies are never averaged together.
-- Commercial calculation proposal: round to the currency quantum using nearest, ties away from zero. Allocate a fixed document total across lines with a largest-remainder method and stable tie-breaker so the lines sum exactly to the total.
+- Official commercial calculation requires a versioned rounding policy selected by jurisdiction, legal entity, calculation context, and effective period. No universal official mode is proposed.
+- A fixed authoritative document total may use deterministic largest-remainder allocation only when the applicable policy selects it; line amounts must still sum exactly to the total.
 - Internal cost proposal: round only when persisting a `CostValue`, using nearest, ties to even, at 12 sub-minor digits. When quantity reaches zero, assign the remaining carrying-value residue to the final issue so both quantity and carrying value become exactly zero.
 
 **4. Vietnam-specific implication**
 
 - VND is the default valuation and presentation currency for a Vietnam operating entity.
-- Prices and posted VND totals are whole đồng under the ISO exponent, while unit costs may remain fractional đồng internally.
+- VND `Money` representation uses whole đồng under ISO exponent `0`, while unit costs may remain fractional đồng internally. The country/context policy—not the exponent—decides how an exact commercial calculation reaches that posted value.
 - A legal entity's functional/accounting currency and any foreign-currency purchase treatment cannot be inferred only from restaurant location.
 
 **5. Legal/accounting verification required**
@@ -92,10 +97,11 @@ Public iiko documentation presents ingredient unit cost, recipe cost, and wareho
 - Confirm how cost revisions crossing a closed accounting period must be represented in official books.
 - Fiscal/e-invoice behavior is explicitly outside Block A.
 
-**6. Product Owner decision required**
+**6. Product Owner decision / review status**
 
+- Fixed: do not define a universal legally significant rounding rule before country/context research.
 - Accept or reject the split between integer posted money and sub-minor derived cost.
-- Accept or replace the proposed two rounding modes and calculation boundaries.
+- Accept or replace the proposed internal technical ties-to-even cost boundary.
 - Accept decimal strings as the API representation.
 - Confirm that the inventory ledger has exactly one valuation currency and never mixes currencies.
 
@@ -126,10 +132,13 @@ Current public iikoMini documentation uses a base unit for a product and support
 - Each stock item has exactly one base unit. It cannot change after the first posted movement without an explicit migration.
 - A count item may be marked `DISCRETE`; its base quantity must then be integral.
 - Same-dimension conversions use versioned exact factors.
-- A package has a versioned factor into the item's base unit, supplier context where relevant, and validity dates.
+- `Package` is the supplier/purchasing presentation; `InventoryUnit` is the base unit in which stock is actually held.
+- A fixed package has a versioned factor into the item's inventory unit: `6 × 1 L = 6 L`; `12 × 0.75 L = 9 L`.
+- Variable-weight packages are mandatory: four meat packs actually accepted at `18.7 kg` post `18.7 kg`, not a nominal package weight.
 - Cross-dimension conversion is rejected unless an item-specific, versioned conversion is explicitly configured. No global `1 ml = 1 g` assumption is allowed.
-- Every posted line preserves entered quantity/UoM, conversion identity and factor snapshot, calculated base quantity, and any quantization delta.
+- Every posted line preserves entered quantity/UoM, package/conversion identity, factor snapshot where fixed, actual accepted base quantity, and any quantization delta.
 - A measurement increment controls what staff can enter (for example 1 g or 0.1 g) independently of internal storage precision.
+- `COUNT`/`ea` is a base unit only for products genuinely consumed as whole pieces. Products routinely consumed in parts use mass or volume even when delivered as pieces or bottles.
 
 **4. Vietnam-specific implication**
 
@@ -140,12 +149,14 @@ Vietnamese supplier practice may use local package names, variable-weight cases,
 - Confirm whether regulated goods require specific statutory units or displayed precision.
 - Alcohol, tax, customs, and fiscal unit rules are not inferred here.
 
-**6. Product Owner decision required**
+**6. Product Owner decision / review status**
 
+- Fixed: supplier package and inventory unit are separate.
+- Fixed: variable-weight packages store actual accepted quantity.
+- Fixed: `COUNT`/`ea` is limited to genuinely piece-consumed products.
 - Accept initial dimensions and recommended canonical units.
 - Confirm that item base unit becomes immutable after stock activity.
 - Confirm that mass/volume conversion always needs item-specific evidence.
-- Confirm whether fractional `COUNT` is allowed only for non-discrete items.
 
 **7. Deferred question**
 
@@ -170,6 +181,7 @@ iiko documentation shows gross and net ingredient quantities, processing loss, f
 **3. Proposed MillQ design**
 
 - A versioned `PreparationSpecification` stores expected inputs, expected output, process losses, preparation steps, and a scale basis.
+- Creating a new specification version never changes old sales. Only a dedicated historical-error correction with permission, reason, and audit may change a historical reference and trigger replay.
 - Scaling stores/applies one exact factor to the specification; it does not copy independently rounded ingredient rows.
 - Expected output quantity is primary. Expected yield is derived when its comparison basis is meaningful:
 
@@ -178,6 +190,7 @@ iiko documentation shows gross and net ingredient quantities, processing loss, f
 - For multi-ingredient or cross-dimensional preparations, the system must not invent a single mass-balance percentage. It preserves each input and output and labels the basis of any yield metric.
 - Expected loss and actual loss remain distinct. Negative loss (weight gain) is valid when the process explains it.
 - Planning cost uses expected output. Actual batch cost uses actual output.
+- Normal loss within normative tolerance needs no comment. Material deviation is highlighted and may require a comment at a configured explanation threshold. Accident, total batch loss, or unusual write-off requires a reason, narrow permission, and immutable audit history.
 
 **4. Vietnam-specific implication**
 
@@ -188,8 +201,10 @@ Local ingredients, supplier trimming, humidity, and kitchen technique may differ
 - Determine whether any official Vietnamese recipe/food-production records prescribe fields, units, or retention periods.
 - Do not implement such forms until verified.
 
-**6. Product Owner decision required**
+**6. Product Owner decision / review status**
 
+- Fixed: normal normative loss needs no comment; configured material deviation is highlighted; accident/total/unusual loss requires reason, permission, and audit.
+- Fixed: a new recipe/preparation version never recalculates old sales by itself.
 - Accept expected output as the primary denominator for normative unit cost.
 - Accept actual output as the primary denominator for actual batch unit cost.
 - Accept yield above 100% and explicitly based yield metrics.
@@ -220,7 +235,7 @@ A standard recipe answers "what should happen". A production record answers "wha
 
   `actualOutputUnitCost = batchMaterialCost / actual primary output quantity`
 
-- If actual output is zero, no unit cost is produced; the input cost is recorded as loss and requires a reason.
+- If actual output is zero, no unit cost is produced; the input cost is a total batch loss requiring reason, narrow permission, and immutable audit history.
 - Virtual preparation: sale recursively expands the preparation to leaf ingredients; no preparation stock is created.
 - Stock-tracked preparation: production consumes ingredients once and creates preparation stock; later sale consumes that stock and must not recursively consume the ingredients again.
 - The chosen materialization mode is part of the recipe/preparation version and the resulting write-off path is auditable.
@@ -306,24 +321,27 @@ Vietnam's Ministry of Finance material publicly lists weighted average among inv
 
 **1. Observed in iiko**
 
-iiko publicly allows negative stock. Its manuals describe correcting earlier negative-stock issues when later stock arrives so the remaining positive stock is not distorted. They also describe time-ordered warehouse documents and historical recipe validity.
+iiko publicly allows negative stock. Its manuals describe correcting earlier negative-stock issues when later stock arrives so the remaining positive stock is not distorted. This is an observed iiko behavior, not a MillQ rule: Product Owner explicitly rejected automatic historical repricing by a genuinely later receipt. The manuals also illustrate why warehouse documents need real chronology and why recipe validity matters.
 
 **2. General restaurant-domain lesson**
 
-- Negative stock is an operational warning that cost is not fully known, not a real negative physical asset.
+- Negative stock is an operational warning; the sale must use only knowledge that existed at its real business position.
 - Naively keeping `-5 × old cost` and then adding `10 × new cost` creates an incorrect cost for the five real units left.
-- Backdated receipts and recipe changes can change derived cost of later movements while the original sale/payment facts remain unchanged.
+- A late-entered historical receipt can change later derived cost; a genuinely new later receipt cannot.
+- A new recipe/preparation version is not a historical correction and cannot change old sales.
 - Recalculation must be deterministic, restartable, and auditable.
 
 **3. Proposed MillQ design**
 
 - Quantity may go below zero and is always visibly flagged.
-- The deficit part of an issue gets `PROVISIONAL` cost using the last known warehouse cost when available; otherwise its cost is `UNKNOWN`.
+- The deficit part of an issue uses the last known warehouse cost at that business position and is labeled `ESTIMATED_FROM_LAST_KNOWN`; if none exists, cost is `UNKNOWN`.
 - Positive carrying value never becomes a negative inventory asset. Deficits are tracked separately from positive carrying value.
-- Subsequent inbound quantity covers the oldest open deficit first. The covering receipt's acquisition unit cost revises the matched issue cost. Any receipt quantity remaining after coverage becomes positive stock at its own cost.
-- Cost revisions do not mutate the issue fact. They create a new derived-cost revision linked to the triggering receipt or backdated document.
-- Movements have one deterministic costing order: business-effective timestamp, then immutable server-assigned posting sequence.
-- A backdated movement is inserted by its effective timestamp; replay starts at the earliest affected point and follows downstream cost dependencies.
+- A genuinely later inbound resolves deficit quantity without revising earlier issue cost. Remaining real stock is valued at receipt cost. When the earlier issue has an estimated value, the difference for resolved quantity is a current auditable `NegativeStockResolutionDelta`; if the earlier cost was `UNKNOWN`, the delta remains `UNRESOLVED`. Its official accounting destination remains a verification gate.
+- A late-entered or corrected fact that actually precedes the issue is inserted at its real business position and triggers replay from there.
+- Costing order is `businessOccurredAt`, then immutable `businessOrder`. Server arrival, upload, database insertion, and synchronization order are audit data only and never costing tie-breakers.
+- If same-time cross-device business order is unresolved, cost status is `ORDER_UNRESOLVED`; the system does not silently use technical order.
+- A preorder creates no movement and fixes no cost; cost is determined at actual sale/write-off.
+- A new recipe/preparation version never triggers historical replay by itself; a dedicated historical-error correction may do so with permission, reason, and audit.
 - Each recalculation run records trigger, requested range, algorithm version, status, affected movements, previous/new values, and totals/hash needed to prove the run.
 - Reports default to the latest successful calculation revision while retaining access to the originally calculated value and revision history.
 
@@ -337,10 +355,14 @@ Backdated supplier paperwork can occur operationally, but its treatment across a
 - Required evidence, approvals, cutoff dates, and retention for corrections.
 - Whether unresolved negative stock may remain at period close.
 
-**6. Product Owner decision required**
+**6. Product Owner decision / review status**
 
-- Accept oldest-deficit-first cover and receipt-cost revision.
-- Accept visible `PROVISIONAL`/`UNKNOWN` cost states.
+- Fixed: business chronology outranks technical recording/upload order and must survive offline synchronization.
+- Fixed: late-entered historical facts trigger affected replay; genuinely later facts do not rewrite earlier sales.
+- Fixed: negative-stock sale uses the last known cost at its business position.
+- Fixed: preorder creates no inventory cost or write-off.
+- Accept visible `ESTIMATED_FROM_LAST_KNOWN`/`UNKNOWN`/`ORDER_UNRESOLVED` states.
+- Accept current `NegativeStockResolutionDelta` as the non-retroactive consequence of a genuinely later receipt, with official accounting mapping deferred.
 - Accept latest-revision reporting as the operational default, with full history retained.
 - Decide whether backdating is permitted past an operationally closed period; legal posting remains separately gated.
 
@@ -373,8 +395,8 @@ Backdated supplier paperwork can occur operationally, but its treatment across a
 | Option | Benefits | Risks | Result |
 | --- | --- | --- | --- |
 | Carry negative quantity and negative value into the next average | Simple formula | Distorts the value of real stock after receipt | Rejected |
-| Freeze last known cost forever | Stable historic report | Ignores actual covering cost and keeps inaccurate margin | Rejected |
-| Provisional deficit, matched to later receipt with audited revision | Accurate remaining stock, explicit uncertainty | Requires replay/revision machinery | Recommended, owner approval required |
+| Always reprice a negative issue from the next receipt | Can align sale to covering purchase | Rewrites history with a fact that did not yet exist | Rejected by Product Owner |
+| Use last known cost at sale; replay only genuine earlier facts; record later resolution delta now | Preserves real chronology and remaining-stock value | Requires explicit resolution delta and accounting mapping | Recommended |
 
 ### 5.4 Preparation handling
 
@@ -429,6 +451,12 @@ Dish consumes `10 g` of that tracked preparation.
 - When stock returns to zero, carrying value returns exactly to zero.
 - Replaying the same ordered movements produces the same quantity, carrying value, issue costs, and revision hash.
 - A backdated receipt changes only derived costs and revisions, not immutable movement quantities or financial facts.
+- A genuinely later receipt does not change an earlier sale cost.
+- Reversing offline upload order does not change costing business order or result.
+- A preorder creates no inventory movement or inventory cost.
+- Creating a new recipe/preparation version does not change historical sales.
+- Fixed packages convert to inventory units, while variable-weight packages post actual accepted quantity.
+- Normal normative loss needs no comment; configured material deviation is highlighted; accident/total/unusual loss requires reason, permission, and audit.
 - A stock-tracked preparation consumes inputs once; its later sale cannot recursively consume the same inputs.
 
 ## 7. Risks and controls
@@ -437,33 +465,57 @@ Dish consumes `10 g` of that tracked preparation.
 | --- | --- |
 | Float drift | Domain decimals and API strings; reject `number` for domain values |
 | VND display precision used as cost precision | Separate posted `Money` from fractional `CostValue` |
-| Rounding totals disagree with lines | Named rounding boundary + deterministic remainder allocation |
-| Package edits rewrite history | Versioned package and factor snapshot on posted line |
+| Rounding policy invented globally | Versioned jurisdiction/context policy; dedicated Vietnam verification |
+| Package edits rewrite history | Separate package/inventory unit; versioned fixed factor or actual variable-weight quantity |
 | kg/L/piece mixed silently | Typed dimensions and item-specific cross-dimension conversion |
 | Recipe scaling changes food cost | One scale factor; no independent early rounding |
 | Norm replaces actual production | Separate specification and batch records |
 | Double write-off | Explicit virtual vs stock-tracked materialization mode |
-| Negative stock hides uncertainty | Visible negative balance and provisional/unknown cost status |
-| Future receipt distorts positive average | Cover deficit separately before establishing positive stock |
+| Negative stock hides uncertainty | Visible negative balance and estimated/unknown cost status |
+| Future receipt rewrites history or distorts remaining stock | Keep earlier sale cost; value remainder at receipt cost; record current resolution delta |
+| Offline upload order changes cost | Persist business order; unresolved conflicts never fall back to server time |
+| New recipe version rewrites old sales | Historical version reference is immutable absent dedicated correction workflow |
 | Backdated edit silently rewrites history | Immutable facts + append-only calculation revisions and run audit |
 | Legal/accounting policy invented | Dedicated Vietnam verification gates listed in both ADRs |
 
-## 8. Owner/architect decisions requested
+## 8. Product Owner decisions incorporated in revision 2
 
-These are proposals, not accepted rules:
+The following directions are authoritative inputs. The ADRs remain Proposed until their revised wording is independently reviewed and accepted:
 
-1. Accept ADR-0002's money/decimal model and prohibition on JavaScript `number` for domain arithmetic.
-2. Accept VND exponent `0` for financial amounts while retaining fractional internal cost.
-3. Accept commercial ties-away rounding, internal cost ties-to-even rounding, and the stated boundaries.
-4. Accept decimal strings in APIs.
-5. Accept mass/volume/count dimensions, immutable item base units, and explicit item-specific cross-dimension conversion.
-6. Accept `PreparationSpecification` versus `ProductionBatch` and material-only launch costing.
-7. Accept virtual versus stock-tracked preparation mode and no-double-write-off invariant.
-8. Accept per-warehouse moving weighted average.
-9. Accept provisional negative-stock cost, oldest-deficit-first matching, and later audited revision using covering receipt cost.
-10. Accept deterministic chronology by business-effective time then immutable posting sequence.
-11. Accept latest successful cost revision as the operational report default while preserving all prior values.
-12. Choose whether operational backdating past a closed period is allowed; official accounting treatment remains blocked on local verification.
+1. Business chronology outranks technical recording/upload order; offline synchronization must preserve it.
+2. Late-entered historical facts trigger affected replay.
+3. Genuinely later receipts do not rewrite earlier sales; negative sales use last known cost at their business position.
+4. Preorders create no inventory cost or write-off.
+5. Supplier package and inventory unit are different; variable-weight packages store actual accepted quantity.
+6. `COUNT`/`ea` is limited to products genuinely consumed as whole pieces.
+7. Loss controls are severity-based: normative, material deviation, accident/total/unusual.
+8. A new recipe/preparation version never recalculates old sales by itself.
+9. No universal legally significant rounding rule is defined before jurisdiction-specific approval.
+
+### Remaining architecture acceptance items
+
+1. Exact money/decimal types and internal cost precision from ADR-0002.
+2. One valuation currency per inventory ledger.
+3. Mass/volume/count dimensions and immutable inventory base unit.
+4. Expected versus actual yield and material-only first-chain preparation cost.
+5. Virtual versus stock-tracked preparation and no-double-write-off invariant.
+6. Per-warehouse moving weighted average and quantity/carrying-value replay state.
+7. `NegativeStockResolutionDelta` as a current operational delta, with official accounting mapping deferred.
+8. Latest successful cost revision as operational report default while preserving history.
+9. Whether operational backdating may cross a closed period; official accounting treatment remains blocked on local verification.
+
+### Change list from independent review
+
+1. Removed universal ties-away-from-zero official-money rounding.
+2. Separated `Package` from `InventoryUnit` and added fixed-package examples.
+3. Added mandatory actual quantity for variable-weight packages.
+4. Restricted `COUNT`/`ea` to genuinely piece-consumed products.
+5. Replaced next-receipt historical repricing with last-known-at-sale cost plus current resolution delta.
+6. Split late-entered historical facts from genuinely later facts.
+7. Replaced server posting sequence with `businessOccurredAt + businessOrder` and prohibited technical fallback.
+8. Added preorder no-write-off/no-cost rule.
+9. Prevented new recipe/preparation versions from changing historical sales.
+10. Added severity-based production-loss explanation, permission, and audit rules.
 
 ## 9. Deliberately deferred
 

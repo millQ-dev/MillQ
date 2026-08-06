@@ -4,12 +4,13 @@
 - **Date:** 2026-08-06
 - **Decision owners:** Product Owner and System Architect
 - **Related issue:** [#9 — Define money, units, yield and moving-average costing](https://github.com/millQ-dev/MillQ/issues/9)
+- **Product Owner correction:** [Block A correction decisions](https://github.com/millQ-dev/MillQ/issues/9#issuecomment-5205173415)
 - **Related analysis:** [`block-a-money-units-yield-costing-analysis.md`](../architecture/block-a-money-units-yield-costing-analysis.md)
 - **Depends on:** [ADR-0001](ADR-0001-initial-technology-stack.md), [Proposed ADR-0002](ADR-0002-money-quantity-units-rounding.md)
 
 ## Context
 
-MillQ must connect purchased ingredients, preparations, recipes, actual production, warehouse balances, sales write-off, and food-cost reporting. The first valuation method is moving weighted average. Negative stock is allowed, and backdated receipts must affect later derived costing history without destroying the original business facts.
+MillQ must connect purchased ingredients, preparations, recipes, actual production, warehouse balances, sales write-off, and food-cost reporting. The first valuation method is moving weighted average. Negative stock is allowed. A late-entered fact that was economically effective in the past must affect later derived costing history; a genuinely later receipt must not rewrite an earlier sale.
 
 Restaurant production introduces another distinction:
 
@@ -36,7 +37,7 @@ A normative, immutable version containing at least:
 - process/technology instructions;
 - materialization mode: `VIRTUAL` or `STOCK_TRACKED`.
 
-Editing composition, expected output, materialization mode, or a cost-affecting conversion creates a new version. Historical operations retain their referenced version.
+Editing composition, expected output, materialization mode, or a cost-affecting conversion creates a new version. Historical operations retain their referenced version. Creating a new version never recalculates old sales by itself. Only a dedicated historical-error correction may change the version referenced by a historical operation; that workflow requires narrow permission, mandatory reason, and immutable audit history.
 
 #### `ProductionBatch`
 
@@ -46,7 +47,7 @@ An actual production fact containing at least:
 - warehouse and responsible employee;
 - actual input movements and quantities;
 - actual primary output and quantity;
-- actual waste/loss and mandatory reason where applicable;
+- actual waste/loss and its configured severity/explanation result;
 - effective and recorded timestamps;
 - resulting cost revision reference.
 
@@ -67,6 +68,14 @@ Yield must record its basis. MillQ does not infer a single percentage when input
 - Expected output drives planning cost.
 - Actual output drives actual batch unit cost.
 
+#### Loss and yield-variance controls
+
+- Normal technological loss within the configured normative tolerance requires no comment.
+- A material deviation from expected yield is visibly highlighted.
+- A configured explanation threshold may require a comment for that deviation; no universal numerical threshold is invented in this ADR.
+- Accident, total batch loss, or unusual write-off always requires a mandatory reason, narrow permission, and immutable audit history.
+- The applicable norm and thresholds are versioned so later changes do not reinterpret an earlier batch.
+
 ### 3. Initial preparation cost is material cost
 
 For the first complete operating chain:
@@ -85,7 +94,7 @@ If actual primary output is zero:
 
 - no unit cost is produced;
 - consumed material cost is recorded as production loss;
-- a reason and sensitive-action audit record are required.
+- the event is treated as total batch loss and requires the sensitive-action controls defined above.
 
 ### 4. Preparation materialization is exclusive
 
@@ -114,7 +123,7 @@ Its replay state contains:
 - on-hand quantity;
 - positive carrying value;
 - derived current average when positive quantity exists;
-- last known average for provisional estimation only;
+- last known average for `ESTIMATED_FROM_LAST_KNOWN` issue costing only;
 - open negative-stock deficits;
 - cost status and calculation revision.
 
@@ -142,54 +151,65 @@ For quantity available in positive stock:
 
 If the issue brings quantity to zero, any sub-minor residual is assigned to that issue so quantity and carrying value both become exactly zero. Last known average may remain as metadata but not as an inventory asset.
 
-### 6. Negative stock is visible and cost is provisional
+### 6. Negative stock is visible and uses knowledge available at the sale
 
 An outbound movement is allowed to cross below zero.
 
 - The part covered by positive stock uses the current moving average.
 - The deficit part is recorded as an open negative-stock deficit.
-- Its operational cost status is `PROVISIONAL` using the last known warehouse cost when one exists.
+- Its issue cost uses the last known warehouse moving-average cost at that business position and is labeled `ESTIMATED_FROM_LAST_KNOWN`.
 - If no defensible prior cost exists, status is `UNKNOWN`; MillQ must not manufacture a zero-cost claim.
 - Negative stock is visible in operational screens, reports, and risk/audit context.
 - Positive carrying value never becomes a negative inventory asset merely because physical quantity is negative.
+- A genuinely later receipt does not revise that earlier issue. The issue changes only if a newly discovered or corrected business fact actually belongs before it in business chronology.
 
-### 7. Later inbound covers the oldest deficit first
+### 7. A genuinely later inbound resolves quantity without rewriting history
 
-Inbound quantity first covers open deficits for the same warehouse/item/currency in costing order.
+An inbound movement whose real business position is after a negative-stock issue may close the negative quantity, but it is not evidence that the goods existed at the earlier sale.
 
-- Matching is oldest deficit first.
-- Matched deficit quantity is valued at the covering inbound's acquisition unit cost.
-- Any previous provisional issue cost receives an append-only cost revision.
-- Remaining inbound quantity, after all possible deficit coverage, creates positive stock at its own remaining acquisition cost.
-- A partially covering inbound leaves the unmatched deficit open and visibly provisional/unknown.
+- Deficit quantities are resolved oldest first in business chronology for deterministic quantity state.
+- The earlier issue retains its `ESTIMATED_FROM_LAST_KNOWN` or `UNKNOWN` cost status and value.
+- Receipt quantity remaining after deficit resolution creates positive stock at the receipt's own acquisition unit cost.
+- When the earlier issue has an estimated cost, the difference between the receipt cost for the resolved quantity and that earlier estimated issue cost is recorded at the receipt's business position as an auditable `NegativeStockResolutionDelta`; it is not attached as a revised cost of the earlier sale.
+- When the earlier issue cost is `UNKNOWN`, the resolution delta remains `UNRESOLVED` rather than manufacturing a prior cost. The receipt can still establish the value of any positive quantity physically remaining after deficit resolution.
+- A partially resolving receipt leaves the remaining negative quantity visibly open.
+- The official-accounting destination of `NegativeStockResolutionDelta` requires the verified closed-period/accounting policy; it is not invented here.
 
-This prevents the classic distortion where `-5 @ 30` plus `+10 @ 40` appears to leave `5 @ 50`. Under this decision, five deficit units are revised to 40 and the five real units left are also valued at 40.
+This prevents the classic distortion where `-5 @ 30` plus `+10 @ 40` appears to leave `5 @ 50`, without rewriting the earlier sale. The sale remains `5 @ 30`; the five real units left are `5 @ 40`; the `50` difference is a current resolution delta at receipt time.
 
-### 8. Costing chronology is total and deterministic
+### 8. Business chronology is total, deterministic, and independent of upload order
 
 Every cost-affecting movement has:
 
-- `effectiveAt`: business-effective instant;
-- `postingSequence`: immutable server-assigned sequence.
+- `businessOccurredAt`: real business-effective instant;
+- `businessOrder`: immutable order of economic operations when the instant/date alone is insufficient;
+- `recordedAt`: server recording time retained for audit only.
 
 Costing order is lexicographic:
 
-`effectiveAt ASC, postingSequence ASC`
+`businessOccurredAt ASC, businessOrder ASC`
 
 - Time is stored as an unambiguous instant; restaurant business date is a separate field.
-- A movement entered later with an earlier `effectiveAt` is backdated and is inserted at its effective position.
-- Events with equal `effectiveAt` retain server posting order; no hidden document-type priority is invented.
-- Offline client time, server receipt time, device identity, and reconciliation rules are retained but specified in later blocks.
+- A movement entered later with an earlier business position is inserted at that real position and triggers replay from there.
+- Server arrival, upload, database insertion, or synchronization order can never be a costing tie-breaker.
+- Offline-created operations must preserve their business order through synchronization.
+- If same-time cross-device business order cannot be established automatically, the affected cost stream is marked `ORDER_UNRESOLVED` for reconciliation; MillQ does not silently fall back to technical time.
+- Exact issuance and reconciliation of `businessOrder` are specified in Blocks C and F without changing this invariant.
+
+#### Preorders
+
+A preorder creates no inventory issue and fixes no inventory cost. Cost is determined at the actual sale/write-off business event using the facts and recipe/preparation version applicable to that event.
 
 ### 9. Recalculation revises derived cost, not business facts
 
-Backdated movements, reversed cost-bearing movements, recipe-version corrections, and negative-deficit coverage can trigger replay.
+Late-entered or corrected movements whose real business position precedes affected operations, reversed cost-bearing movements, and explicit historical-error corrections can trigger replay. A genuinely later receipt, a preorder, or creation of a new recipe/preparation version does not trigger historical sale-cost replay by itself.
 
 - Quantity, document amount, employee, reason, and original timestamps are immutable business facts after posting except through explicit reversal/correction workflows.
 - Derived issue cost, carrying value, margin, and food cost may receive a new revision.
 - The previous derived value remains queryable.
 - Replay begins at the earliest affected movement for the cost stream and follows downstream dependencies such as a preparation output later consumed by a dish.
 - A replay may stop only at a proven stable checkpoint where state and dependency inputs match the prior successful revision.
+- Example: goods physically received on 31 July but entered on 3 August replay later operations from their 31 July business position. Goods first physically received on 2 August do not reprice a sale on 1 August.
 
 Each `CostRecalculationRun` records at least:
 
@@ -207,7 +227,7 @@ Each changed movement receives a linked cost revision containing old and new val
 ### 10. Reports expose cost certainty and revision
 
 - Operational reports default to the latest successful cost revision.
-- Reports can identify `FINAL`, `PROVISIONAL`, and `UNKNOWN` cost.
+- Reports can identify `FINAL`, `ESTIMATED_FROM_LAST_KNOWN`, `UNKNOWN`, and `ORDER_UNRESOLVED` cost/order states.
 - Negative quantity is never hidden by a positive aggregate elsewhere.
 - Users with permission can inspect originally calculated cost and the revision chain.
 - Revenue, payment, quantity, and other closed business facts are not changed by cost replay.
@@ -223,10 +243,14 @@ Each changed movement receives a linked cost revision containing old and new val
 6. Moving average is never mixed across warehouses, stock items, or currencies.
 7. A zero quantity has zero carrying value.
 8. Negative stock is visible and its uncertain cost is labeled.
-9. Covering negative stock cannot inflate the unit cost of remaining real stock through negative carrying value.
-10. Replay of the same ordered facts and algorithm version produces the same result.
-11. Recalculation appends revisions and never erases the previous result or changes the underlying movement fact.
-12. A historical recipe/preparation operation retains the exact version used.
+9. A genuinely later receipt never revises an earlier issue cost.
+10. A late-entered historical fact is ordered by its real business position and can revise later derived cost.
+11. Remaining real stock after negative-quantity resolution is valued at the genuine later receipt's acquisition cost; any difference is a current auditable resolution delta.
+12. Replay of the same ordered business facts and algorithm version produces the same result regardless of upload order.
+13. Recalculation appends revisions and never erases the previous result or changes the underlying movement fact.
+14. A historical recipe/preparation operation retains the exact version used; creating a new version never changes old sales.
+15. A preorder has no inventory movement and no inventory cost.
+16. Normative loss needs no comment; configured material deviation is highlighted; accident/total/unusual loss requires reason, permission, and audit.
 
 ## Mandatory examples
 
@@ -260,15 +284,25 @@ Opening stock `20` units with carrying value `600` (`30/unit`) plus receipt `10`
 
 The displayed value may be `31.67`, but the next issue uses the stored exact carrying value, not the displayed rate.
 
-### Negative stock coverage
+### Negative stock and a genuinely later receipt
 
 - issue `5` units while stock is zero;
-- last known estimate is `30/unit`, so provisional issue cost is `150`;
-- receive `10` units at `40/unit`;
-- receipt covers the five-unit deficit at `40`, revising issue cost to `200`;
-- remaining positive stock is `5` units with carrying value `200`, average `40/unit`.
+- last known cost at the sale is `30/unit`, so sale issue cost is `150` with status `ESTIMATED_FROM_LAST_KNOWN`;
+- goods are genuinely received later: `10` units at `40/unit`;
+- the earlier sale remains `150`;
+- remaining positive stock is `5` units with carrying value `200`, average `40/unit`;
+- current `NegativeStockResolutionDelta` at receipt time is `5 × (40 - 30) = 50`.
 
-The `50/unit` distortion from naive `-150 + 400` is not allowed.
+The `50/unit` distortion from naive `-150 + 400` is not allowed, and the later receipt does not rewrite the sale.
+
+### Late-entered historical receipt
+
+- goods physically arrived on 31 July;
+- the receipt was entered on 3 August;
+- a sale occurred on 1 August;
+- the receipt is inserted at its real 31 July business position and the 1 August sale cost is replayed.
+
+If the goods physically arrived only on 2 August, the 1 August sale is not replayed.
 
 ## Alternatives considered
 
@@ -288,9 +322,13 @@ Rejected. It double-consumes the same physical ingredients.
 
 Rejected. A later receipt can inflate the cost of real remaining stock.
 
-### Never revise provisional issue cost
+### Always revise a negative issue using the next receipt
 
-Rejected. It leaves food cost disconnected from the acquisition that resolved the missing stock.
+Rejected by Product Owner. A genuinely later receipt did not exist at the earlier sale and cannot rewrite it. Only a fact that actually preceded the sale can change that sale's derived cost.
+
+### Use server recording order for same-time movements
+
+Rejected by Product Owner. Upload and offline synchronization order are technical accidents, not business chronology.
 
 ### Overwrite prior derived cost during replay
 
@@ -307,41 +345,54 @@ Rejected. It hides location economics and values a sale using stock that was not
 - Norm and actual production can be compared directly.
 - Real kitchen yield drives real preparation cost.
 - Both virtual and stock-tracked preparations are supported safely.
-- Negative stock remains operationally possible without pretending its cost is final.
-- Backdated receipts can correct later food cost while preserving every historical fact and calculation revision.
+- Negative stock remains operationally possible while showing when cost comes from the last known value or is unknown.
+- Late-entered historical receipts correct later food cost; genuinely new receipts leave earlier sale cost unchanged.
 - Warehouse economics and margin remain explainable.
 
 ### Negative / accepted cost
 
 - Costing requires an ordered replay engine and dependency tracking.
 - Reports need cost-status and revision concepts.
-- A later receipt can legitimately change derived historical margin.
+- A late-entered historical fact can legitimately change derived historical margin; a genuinely later fact cannot.
+- Resolving negative stock with a genuinely later receipt creates a current resolution delta whose official accounting destination still requires verification.
 - Stock-tracked preparations require production discipline.
-- Unknown/provisional costs may remain until missing receipts or corrections arrive.
+- Unknown costs may remain until a genuine historical fact or explicit correction supplies defensible earlier cost.
 - Period closure requires business and legal policy before implementation.
 
 ## Validation plan
 
 When implementation is authorized, tests must include:
 
-1. The four mandatory examples above.
+1. The numerical and chronology examples above.
 2. Property-based proportional scaling across positive decimal factors.
 3. Yield below, equal to, and above 100%.
 4. Actual output differing from expected output.
-5. Zero-output batch becoming reasoned loss.
+5. Normal normative loss with no comment, highlighted deviation at a configured threshold, and total/unusual loss requiring permission/reason/audit.
 6. Virtual preparation recursive issue exactly once.
 7. Stock-tracked preparation input issue + output receipt + later output issue, with no recursive double write-off.
 8. Moving average over multiple receipts and partial issues.
 9. Exact zero quantity/carrying-value closure with residual assignment.
 10. Negative issue with known and unknown prior cost.
-11. Partial and multiple deficit-covering receipts, oldest deficit first.
-12. Backdated receipt changing later issue cost but not movement facts.
-13. Deterministic same-timestamp posting-sequence ordering.
-14. Replay idempotency and equal result hash on retry.
-15. Cascading recalculation through a stock-tracked preparation into a later dish cost.
-16. Report separation of final, provisional, and unknown costs.
+11. Genuinely later receipt leaving earlier sale cost unchanged, valuing remaining real stock at receipt cost, and creating a current resolution delta.
+12. Receipt entered 3 August but physically received 31 July changing a 1 August issue; receipt physically received 2 August not changing it.
+13. Multiple receipts calculated by business chronology rather than upload order.
+14. Same-time business ordering surviving reversed offline upload order; unresolved order never falling back to server time.
+15. Preorder creating no movement/cost and actual sale determining cost.
+16. New recipe/preparation version leaving old sales unchanged; explicit historical-error correction triggering audited replay.
+17. Replay idempotency and equal result hash on retry.
+18. Cascading recalculation through a stock-tracked preparation into a later dish cost.
+19. Report separation of final, estimated-from-last-known, unknown, and order-unresolved states.
 
-## Owner/architect acceptance checklist
+## Product Owner directions incorporated
+
+- [x] Business chronology outranks technical recording/upload order.
+- [x] Late-entered historical facts trigger affected replay; genuinely later facts do not rewrite earlier sales.
+- [x] Negative-stock sale uses the last known cost at its business position.
+- [x] Preorder creates no inventory cost or write-off.
+- [x] Normal loss needs no comment; configured material deviation is highlighted; accident/total/unusual loss requires reason, permission, and audit.
+- [x] A new recipe/preparation version never recalculates old sales by itself.
+
+## Remaining owner/architect acceptance checklist
 
 - [ ] Accept normative `PreparationSpecification` and actual `ProductionBatch` as separate records.
 - [ ] Accept expected output for planning and actual output for batch unit cost.
@@ -350,9 +401,9 @@ When implementation is authorized, tests must include:
 - [ ] Accept explicit `VIRTUAL` versus `STOCK_TRACKED` mode and the no-double-write-off invariant.
 - [ ] Accept moving weighted average per warehouse/item/valuation currency.
 - [ ] Accept quantity + carrying value as authoritative replay state.
-- [ ] Accept visible `PROVISIONAL` and `UNKNOWN` negative-stock cost.
-- [ ] Accept oldest-deficit-first matching and covering-receipt cost revision.
-- [ ] Accept chronology by `effectiveAt`, then immutable `postingSequence`.
+- [ ] Accept visible `ESTIMATED_FROM_LAST_KNOWN`, `UNKNOWN`, and `ORDER_UNRESOLVED` states.
+- [ ] Accept current `NegativeStockResolutionDelta` for a genuinely later receipt, with official accounting mapping deferred to verification.
+- [ ] Accept `businessOccurredAt + businessOrder` as costing order and `recordedAt` as audit-only time.
 - [ ] Accept append-only cost calculation revisions and latest-successful operational reporting.
 - [ ] Decide whether operational backdating may cross a closed period; official accounting treatment remains separately gated.
 
@@ -377,6 +428,8 @@ No fiscal/e-invoice behavior is defined by this ADR.
 - Access rules for posting, backdating, and recalculation (Block D).
 - Recipe/modifier/effective-recipe lifecycle beyond the preparation foundation (Block E).
 - Offline clock and reconciliation rules (Block F).
+- Exact creation/reconciliation mechanism for cross-device `businessOrder` (Blocks C/F); server arrival is prohibited as fallback.
+- Official-accounting mapping of `NegativeStockResolutionDelta`.
 - Labour and overhead allocation.
 - By-products, co-products, and multi-output allocation.
 - Transfer costing between warehouses and legal entities.
