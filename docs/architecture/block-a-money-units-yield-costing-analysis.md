@@ -1,9 +1,10 @@
 # Block A Analysis: Money, Units, Yield, and Costing
 
-- **Status:** Revision 2 ready for owner/architect review; ADR-0002 and ADR-0003 remain Proposed
-- **Date:** 2026-08-06
+- **Status:** Revision 3 ready for independent review; ADR-0002 and ADR-0003 remain Proposed
+- **Date:** 2026-08-08
 - **Related issue:** [#9 — Define money, units, yield and moving-average costing](https://github.com/millQ-dev/MillQ/issues/9)
 - **Product Owner correction:** [Block A correction decisions](https://github.com/millQ-dev/MillQ/issues/9#issuecomment-5205173415)
+- **Product Owner final clarification:** [Block A final clarification](https://github.com/millQ-dev/MillQ/issues/9#issuecomment-5227924209)
 - **Proposed decisions:** [ADR-0002](../decisions/ADR-0002-money-quantity-units-rounding.md), [ADR-0003](../decisions/ADR-0003-yield-preparations-moving-average-costing.md)
 - **Scope:** Architecture and domain rules only. No restaurant application feature implementation.
 
@@ -22,9 +23,9 @@ The recommended direction is:
 7. Separate normative `PreparationSpecification` from actual `ProductionBatch`.
 8. Use the batch's actual output for actual unit cost; use normative output only for planning.
 9. Use moving weighted average per warehouse, stock item, and valuation currency.
-10. Value a negative-stock sale from the last known cost at its business position; a genuinely later receipt never rewrites it, while a late-entered historical fact can trigger audited replay.
+10. Value a negative-stock sale from the last known estimate at its business position; a genuinely later receipt never rewrites it but becomes the estimate for subsequent negative-stock sales, while a late-entered historical fact can trigger audited replay.
 11. Never rewrite business movements during recalculation. Append a new calculation revision and preserve the previous result.
-12. Order costing by real business chronology, never server arrival/upload order, and preserve same-time business order through offline synchronization.
+12. Require a real business date, keep exact business time optional and never fabricated, store supplier document number separately, and preserve real business order through offline synchronization.
 13. Explicitly choose either virtual recursive preparation or stock-tracked production for each consumption path, never both.
 14. Treat a preorder as non-costing: inventory cost is determined only at actual sale/write-off.
 15. Never recalculate old sales merely because a new recipe/preparation version was created.
@@ -327,19 +328,23 @@ iiko publicly allows negative stock. Its manuals describe correcting earlier neg
 
 - Negative stock is an operational warning; the sale must use only knowledge that existed at its real business position.
 - Naively keeping `-5 × old cost` and then adding `10 × new cost` creates an incorrect cost for the five real units left.
-- A late-entered historical receipt can change later derived cost; a genuinely new later receipt cannot.
+- A late-entered historical receipt can change derived cost after its real past position. A genuinely new later receipt cannot change earlier derived cost, but its acquisition cost can inform later operations.
 - A new recipe/preparation version is not a historical correction and cannot change old sales.
 - Recalculation must be deterministic, restartable, and auditable.
 
 **3. Proposed MillQ design**
 
 - Quantity may go below zero and is always visibly flagged.
-- The deficit part of an issue uses the last known warehouse cost at that business position and is labeled `ESTIMATED_FROM_LAST_KNOWN`; if none exists, cost is `UNKNOWN`.
+- The deficit part of an issue uses the last known warehouse issue-cost estimate at that business position and is labeled `ESTIMATED_FROM_LAST_KNOWN`; if none exists, cost is `UNKNOWN`.
 - Positive carrying value never becomes a negative inventory asset. Deficits are tracked separately from positive carrying value.
-- A genuinely later inbound resolves deficit quantity without revising earlier issue cost. Remaining real stock is valued at receipt cost. When the earlier issue has an estimated value, the difference for resolved quantity is a current auditable `NegativeStockResolutionDelta`; if the earlier cost was `UNKNOWN`, the delta remains `UNRESOLVED`. Its official accounting destination remains a verification gate.
+- A genuinely later inbound resolves open deficit quantities strictly oldest first by business position; it cannot skip an older deficit to resolve a newer one.
+- It never revises earlier issue cost. Remaining real stock is valued at receipt cost. When an earlier issue has an estimated value, the difference for the resolved quantity is a current auditable `NegativeStockResolutionDelta`.
+- When the resolved issue cost is `UNKNOWN`, the receipt acquisition cost for that quantity is preserved separately as unallocated/unresolved receipt cost. It is neither discarded nor automatically assigned retrospectively to the sale. Exact schema naming and official accounting mapping remain verification gates.
+- From the genuine receipt's business position forward, its acquisition unit cost becomes the estimate for subsequent sales that continue while stock is negative.
 - A late-entered or corrected fact that actually precedes the issue is inserted at its real business position and triggers replay from there.
-- Costing order is `businessOccurredAt`, then immutable `businessOrder`. Server arrival, upload, database insertion, and synchronization order are audit data only and never costing tie-breakers.
-- If same-time cross-device business order is unresolved, cost status is `ORDER_UNRESOLVED`; the system does not silently use technical order.
+- Every movement has mandatory `businessDate`, optional genuinely known `businessTime`, immutable within-date `businessOrder`, and audit-only `recordedAt`. Supplier invoice/document number is stored separately.
+- Costing order is `businessDate`, then `businessOrder`. Known exact time constrains that order; missing time remains missing. Server arrival, upload, database insertion, and synchronization order are never costing tie-breakers.
+- If cross-device business order is unresolved, cost status is `ORDER_UNRESOLVED`; the system does not silently use technical order or invent a time.
 - A preorder creates no movement and fixes no cost; cost is determined at actual sale/write-off.
 - A new recipe/preparation version never triggers historical replay by itself; a dedicated historical-error correction may do so with permission, reason, and audit.
 - Each recalculation run records trigger, requested range, algorithm version, status, affected movements, previous/new values, and totals/hash needed to prove the run.
@@ -360,9 +365,13 @@ Backdated supplier paperwork can occur operationally, but its treatment across a
 - Fixed: business chronology outranks technical recording/upload order and must survive offline synchronization.
 - Fixed: late-entered historical facts trigger affected replay; genuinely later facts do not rewrite earlier sales.
 - Fixed: negative-stock sale uses the last known cost at its business position.
+- Fixed: business date is mandatory, exact time is optional and never fabricated, and supplier document number is separate.
+- Fixed: a genuine later receipt updates only the estimate for subsequent negative-stock sales.
+- Fixed: receipt cost resolving an `UNKNOWN` deficit is preserved separately as unallocated/unresolved cost.
+- Fixed: multiple open deficits are resolved oldest first by business position.
 - Fixed: preorder creates no inventory cost or write-off.
 - Accept visible `ESTIMATED_FROM_LAST_KNOWN`/`UNKNOWN`/`ORDER_UNRESOLVED` states.
-- Accept current `NegativeStockResolutionDelta` as the non-retroactive consequence of a genuinely later receipt, with official accounting mapping deferred.
+- Accept the storage representation/naming for `NegativeStockResolutionDelta` and unallocated/unresolved receipt cost; their official accounting mapping remains deferred.
 - Accept latest-revision reporting as the operational default, with full history retained.
 - Decide whether backdating is permitted past an operationally closed period; legal posting remains separately gated.
 
@@ -396,7 +405,7 @@ Backdated supplier paperwork can occur operationally, but its treatment across a
 | --- | --- | --- | --- |
 | Carry negative quantity and negative value into the next average | Simple formula | Distorts the value of real stock after receipt | Rejected |
 | Always reprice a negative issue from the next receipt | Can align sale to covering purchase | Rewrites history with a fact that did not yet exist | Rejected by Product Owner |
-| Use last known cost at sale; replay only genuine earlier facts; record later resolution delta now | Preserves real chronology and remaining-stock value | Requires explicit resolution delta and accounting mapping | Recommended |
+| Use estimate known at sale; resolve deficits oldest first; update only later estimates; preserve all receipt cost | Preserves chronology, remaining-stock value, and acquisition cost | Requires explicit resolution/unallocated-cost records and accounting mapping | Recommended |
 
 ### 5.4 Preparation handling
 
@@ -452,6 +461,10 @@ Dish consumes `10 g` of that tracked preparation.
 - Replaying the same ordered movements produces the same quantity, carrying value, issue costs, and revision hash.
 - A backdated receipt changes only derived costs and revisions, not immutable movement quantities or financial facts.
 - A genuinely later receipt does not change an earlier sale cost.
+- A genuinely later receipt becomes the estimate for subsequent sales that continue in negative stock.
+- Receipt cost resolving an `UNKNOWN` deficit remains separately preserved and traceable.
+- `10:00 -5`, `12:00 -3`, then `+6` resolves the first deficit and one unit of the second.
+- Every movement has a business date; absent exact time stays absent; supplier document number is stored separately from chronology fields.
 - Reversing offline upload order does not change costing business order or result.
 - A preorder creates no inventory movement or inventory cost.
 - Creating a new recipe/preparation version does not change historical sales.
@@ -472,13 +485,15 @@ Dish consumes `10 g` of that tracked preparation.
 | Norm replaces actual production | Separate specification and batch records |
 | Double write-off | Explicit virtual vs stock-tracked materialization mode |
 | Negative stock hides uncertainty | Visible negative balance and estimated/unknown cost status |
-| Future receipt rewrites history or distorts remaining stock | Keep earlier sale cost; value remainder at receipt cost; record current resolution delta |
-| Offline upload order changes cost | Persist business order; unresolved conflicts never fall back to server time |
+| Future receipt rewrites history or fails to update later estimates | Keep earlier sale cost; update the estimate only from the receipt position forward |
+| Receipt cost disappears while resolving an unknown deficit | Preserve that acquisition cost separately as unallocated/unresolved and auditable |
+| Several deficits resolve out of order | Resolve oldest deficit first by real business position |
+| Offline upload order or invented time changes cost | Require business date and business order; optional time stays absent; technical time is never fallback |
 | New recipe version rewrites old sales | Historical version reference is immutable absent dedicated correction workflow |
 | Backdated edit silently rewrites history | Immutable facts + append-only calculation revisions and run audit |
 | Legal/accounting policy invented | Dedicated Vietnam verification gates listed in both ADRs |
 
-## 8. Product Owner decisions incorporated in revision 2
+## 8. Product Owner decisions incorporated in revision 3
 
 The following directions are authoritative inputs. The ADRs remain Proposed until their revised wording is independently reviewed and accepted:
 
@@ -491,6 +506,10 @@ The following directions are authoritative inputs. The ADRs remain Proposed unti
 7. Loss controls are severity-based: normative, material deviation, accident/total/unusual.
 8. A new recipe/preparation version never recalculates old sales by itself.
 9. No universal legally significant rounding rule is defined before jurisdiction-specific approval.
+10. Business date is mandatory; exact time is optional and never fabricated; supplier document number is separate.
+11. A genuine later receipt becomes the estimate only for subsequent negative-stock sales.
+12. Receipt acquisition cost resolving an `UNKNOWN` deficit is preserved separately until a dedicated accounting decision.
+13. Multiple open deficits are resolved oldest first by business position.
 
 ### Remaining architecture acceptance items
 
@@ -500,11 +519,11 @@ The following directions are authoritative inputs. The ADRs remain Proposed unti
 4. Expected versus actual yield and material-only first-chain preparation cost.
 5. Virtual versus stock-tracked preparation and no-double-write-off invariant.
 6. Per-warehouse moving weighted average and quantity/carrying-value replay state.
-7. `NegativeStockResolutionDelta` as a current operational delta, with official accounting mapping deferred.
+7. Storage naming/representation for current resolution delta and unallocated/unresolved receipt cost, with official accounting mapping deferred.
 8. Latest successful cost revision as operational report default while preserving history.
 9. Whether operational backdating may cross a closed period; official accounting treatment remains blocked on local verification.
 
-### Change list from independent review
+### Change list from the first independent review
 
 1. Removed universal ties-away-from-zero official-money rounding.
 2. Separated `Package` from `InventoryUnit` and added fixed-package examples.
@@ -512,10 +531,18 @@ The following directions are authoritative inputs. The ADRs remain Proposed unti
 4. Restricted `COUNT`/`ea` to genuinely piece-consumed products.
 5. Replaced next-receipt historical repricing with last-known-at-sale cost plus current resolution delta.
 6. Split late-entered historical facts from genuinely later facts.
-7. Replaced server posting sequence with `businessOccurredAt + businessOrder` and prohibited technical fallback.
+7. Replaced server posting sequence with explicit business chronology and prohibited technical fallback; Revision 3 refines its fields to `businessDate`, optional `businessTime`, and `businessOrder`.
 8. Added preorder no-write-off/no-cost rule.
 9. Prevented new recipe/preparation versions from changing historical sales.
 10. Added severity-based production-loss explanation, permission, and audit rules.
+
+### Exact changes from the final Product Owner clarification
+
+1. Replaced mandatory business instant with mandatory `businessDate`, optional real `businessTime`, and immutable `businessOrder`; prohibited invented time.
+2. Separated supplier invoice/document number from chronology fields.
+3. Made a genuine later receipt's acquisition unit cost the estimate for subsequent—not prior—negative-stock sales.
+4. Required receipt cost that resolves an `UNKNOWN` deficit to remain separately preserved as unallocated/unresolved cost.
+5. Made oldest-deficit-first resolution explicit and added the `-5`, `-3`, `+6` example.
 
 ## 9. Deliberately deferred
 

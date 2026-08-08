@@ -2,9 +2,11 @@
 
 - **Status:** Proposed
 - **Date:** 2026-08-06
+- **Last updated:** 2026-08-08
 - **Decision owners:** Product Owner and System Architect
 - **Related issue:** [#9 — Define money, units, yield and moving-average costing](https://github.com/millQ-dev/MillQ/issues/9)
 - **Product Owner correction:** [Block A correction decisions](https://github.com/millQ-dev/MillQ/issues/9#issuecomment-5205173415)
+- **Product Owner final clarification:** [Block A final clarification](https://github.com/millQ-dev/MillQ/issues/9#issuecomment-5227924209)
 - **Related analysis:** [`block-a-money-units-yield-costing-analysis.md`](../architecture/block-a-money-units-yield-costing-analysis.md)
 - **Depends on:** [ADR-0001](ADR-0001-initial-technology-stack.md), [Proposed ADR-0002](ADR-0002-money-quantity-units-rounding.md)
 
@@ -123,8 +125,9 @@ Its replay state contains:
 - on-hand quantity;
 - positive carrying value;
 - derived current average when positive quantity exists;
-- last known average for `ESTIMATED_FROM_LAST_KNOWN` issue costing only;
+- last known issue-cost estimate effective from its business position forward, together with its source movement;
 - open negative-stock deficits;
+- unresolved receipt cost attached to quantities that resolved `UNKNOWN` deficits;
 - cost status and calculation revision.
 
 The authoritative state is quantity plus carrying value. Average unit cost is derived.
@@ -149,7 +152,7 @@ For quantity available in positive stock:
 
 `newCarryingValue = oldCarryingValue - issueCost`
 
-If the issue brings quantity to zero, any sub-minor residual is assigned to that issue so quantity and carrying value both become exactly zero. Last known average may remain as metadata but not as an inventory asset.
+If the issue brings quantity to zero, any sub-minor residual is assigned to that issue so quantity and carrying value both become exactly zero. The last known issue-cost estimate may remain as metadata but not as an inventory asset.
 
 ### 6. Negative stock is visible and uses knowledge available at the sale
 
@@ -157,7 +160,7 @@ An outbound movement is allowed to cross below zero.
 
 - The part covered by positive stock uses the current moving average.
 - The deficit part is recorded as an open negative-stock deficit.
-- Its issue cost uses the last known warehouse moving-average cost at that business position and is labeled `ESTIMATED_FROM_LAST_KNOWN`.
+- Its issue cost uses the last known warehouse issue-cost estimate at that business position and is labeled `ESTIMATED_FROM_LAST_KNOWN`.
 - If no defensible prior cost exists, status is `UNKNOWN`; MillQ must not manufacture a zero-cost claim.
 - Negative stock is visible in operational screens, reports, and risk/audit context.
 - Positive carrying value never becomes a negative inventory asset merely because physical quantity is negative.
@@ -167,13 +170,17 @@ An outbound movement is allowed to cross below zero.
 
 An inbound movement whose real business position is after a negative-stock issue may close the negative quantity, but it is not evidence that the goods existed at the earlier sale.
 
-- Deficit quantities are resolved oldest first in business chronology for deterministic quantity state.
+- Deficit quantities are resolved strictly oldest first by business position. A receipt cannot resolve a newer deficit while an older one for the same cost stream remains open.
 - The earlier issue retains its `ESTIMATED_FROM_LAST_KNOWN` or `UNKNOWN` cost status and value.
-- Receipt quantity remaining after deficit resolution creates positive stock at the receipt's own acquisition unit cost.
 - When the earlier issue has an estimated cost, the difference between the receipt cost for the resolved quantity and that earlier estimated issue cost is recorded at the receipt's business position as an auditable `NegativeStockResolutionDelta`; it is not attached as a revised cost of the earlier sale.
-- When the earlier issue cost is `UNKNOWN`, the resolution delta remains `UNRESOLVED` rather than manufacturing a prior cost. The receipt can still establish the value of any positive quantity physically remaining after deficit resolution.
+- When the earlier issue cost is `UNKNOWN`, the receipt acquisition cost for the quantity that resolves it is preserved separately as auditable unallocated/unresolved receipt cost. It is not discarded, converted to zero, or assigned retrospectively to the earlier sale. Exact schema naming and official-accounting destination remain deferred.
+
+  `unallocatedResolvedCost = resolvedUnknownQuantity × receiptAcquisitionUnitCost`
+
+- Receipt quantity remaining after deficit resolution creates positive stock at the receipt's own acquisition unit cost.
+- From the receipt's business position forward, its acquisition unit cost becomes the last known issue-cost estimate for subsequent sales that occur while the cost stream remains negative. It never changes an issue before the receipt.
 - A partially resolving receipt leaves the remaining negative quantity visibly open.
-- The official-accounting destination of `NegativeStockResolutionDelta` requires the verified closed-period/accounting policy; it is not invented here.
+- The official-accounting destinations of `NegativeStockResolutionDelta` and unallocated/unresolved receipt cost require verified accounting policy; this ADR preserves the values but does not invent their posting accounts.
 
 This prevents the classic distortion where `-5 @ 30` plus `+10 @ 40` appears to leave `5 @ 50`, without rewriting the earlier sale. The sale remains `5 @ 30`; the five real units left are `5 @ 40`; the `50` difference is a current resolution delta at receipt time.
 
@@ -181,19 +188,23 @@ This prevents the classic distortion where `-5 @ 30` plus `+10 @ 40` appears to 
 
 Every cost-affecting movement has:
 
-- `businessOccurredAt`: real business-effective instant;
-- `businessOrder`: immutable order of economic operations when the instant/date alone is insufficient;
+- `businessDate`: mandatory real business-effective date;
+- `businessTime`: optional exact business time, stored and used only when genuinely known;
+- `businessOrder`: immutable order of economic operations within the business date;
 - `recordedAt`: server recording time retained for audit only.
 
-Costing order is lexicographic:
+A supplier document additionally stores its supplier invoice/document number as a separate fact. That identifier is not a replacement for business date, optional real time, or business order.
 
-`businessOccurredAt ASC, businessOrder ASC`
+Costing order is the immutable business position:
 
-- Time is stored as an unambiguous instant; restaurant business date is a separate field.
+`businessDate ASC, businessOrder ASC`
+
+- MillQ never invents `businessTime` to make a complete timestamp. A missing exact time remains missing.
+- When exact times are genuinely known, `businessOrder` must respect them. When time is absent or equal, `businessOrder` preserves the established real economic sequence without using a technical timestamp.
 - A movement entered later with an earlier business position is inserted at that real position and triggers replay from there.
 - Server arrival, upload, database insertion, or synchronization order can never be a costing tie-breaker.
 - Offline-created operations must preserve their business order through synchronization.
-- If same-time cross-device business order cannot be established automatically, the affected cost stream is marked `ORDER_UNRESOLVED` for reconciliation; MillQ does not silently fall back to technical time.
+- If cross-device business order for a date cannot be established automatically, the affected cost stream is marked `ORDER_UNRESOLVED` for reconciliation; MillQ does not silently fall back to technical time or invent a business time.
 - Exact issuance and reconciliation of `businessOrder` are specified in Blocks C and F without changing this invariant.
 
 #### Preorders
@@ -229,6 +240,7 @@ Each changed movement receives a linked cost revision containing old and new val
 - Operational reports default to the latest successful cost revision.
 - Reports can identify `FINAL`, `ESTIMATED_FROM_LAST_KNOWN`, `UNKNOWN`, and `ORDER_UNRESOLVED` cost/order states.
 - Negative quantity is never hidden by a positive aggregate elsewhere.
+- Unallocated/unresolved receipt cost created by resolution of an `UNKNOWN` deficit remains separately visible and traceable to the receipt and resolved deficit quantity.
 - Users with permission can inspect originally calculated cost and the revision chain.
 - Revenue, payment, quantity, and other closed business facts are not changed by cost replay.
 - Official accounting correction behavior for closed periods remains a verified-policy gate, not an inference.
@@ -246,11 +258,15 @@ Each changed movement receives a linked cost revision containing old and new val
 9. A genuinely later receipt never revises an earlier issue cost.
 10. A late-entered historical fact is ordered by its real business position and can revise later derived cost.
 11. Remaining real stock after negative-quantity resolution is valued at the genuine later receipt's acquisition cost; any difference is a current auditable resolution delta.
-12. Replay of the same ordered business facts and algorithm version produces the same result regardless of upload order.
-13. Recalculation appends revisions and never erases the previous result or changes the underlying movement fact.
-14. A historical recipe/preparation operation retains the exact version used; creating a new version never changes old sales.
-15. A preorder has no inventory movement and no inventory cost.
-16. Normative loss needs no comment; configured material deviation is highlighted; accident/total/unusual loss requires reason, permission, and audit.
+12. Receipt cost assigned to resolution of an `UNKNOWN` deficit is preserved separately as unallocated/unresolved cost and never disappears.
+13. A later receipt's unit cost applies as the estimate only to subsequent negative-stock issues, never to earlier ones.
+14. Multiple open deficits are resolved oldest first by business position.
+15. Every movement has a business date; exact business time is optional and never fabricated; supplier document number is a separate fact.
+16. Replay of the same ordered business facts and algorithm version produces the same result regardless of upload order.
+17. Recalculation appends revisions and never erases the previous result or changes the underlying movement fact.
+18. A historical recipe/preparation operation retains the exact version used; creating a new version never changes old sales.
+19. A preorder has no inventory movement and no inventory cost.
+20. Normative loss needs no comment; configured material deviation is highlighted; accident/total/unusual loss requires reason, permission, and audit.
 
 ## Mandatory examples
 
@@ -295,12 +311,46 @@ The displayed value may be `31.67`, but the next issue uses the stored exact car
 
 The `50/unit` distortion from naive `-150 + 400` is not allowed, and the later receipt does not rewrite the sale.
 
+### Later receipt updates only subsequent negative-stock estimates
+
+- last known issue-cost estimate is `30/unit`;
+- a sale of `5` units into negative stock remains costed at `5 × 30 = 150`;
+- a genuinely later receipt of `2` units at `40/unit` resolves two units of the old deficit, leaving the balance at `-3`;
+- the earlier sale remains `150`, and the current resolution delta for those two units is `2 × (40 - 30) = 20`;
+- from the receipt's business position, `40/unit` is the new known estimate;
+- a subsequent sale of `1` unit while stock is still negative is estimated at `1 × 40 = 40`.
+
+The receipt changes the estimate only forward from its real business position.
+
+### Receipt cost resolving an `UNKNOWN` deficit is preserved
+
+- a sale creates a `-5` deficit with cost `UNKNOWN`;
+- a genuinely later receipt provides `2` units at `40/unit`, leaving quantity at `-3`;
+- the earlier sale remains `UNKNOWN`;
+- the full `2 × 40 = 80` receipt cost for the resolved quantity is stored separately as unallocated/unresolved receipt cost;
+- `40/unit` becomes the estimate for subsequent negative-stock sales.
+
+No part of the `80` disappears, becomes zero, or is assigned retrospectively to the old sale.
+
+### Oldest deficit first
+
+- `10:00`: sale creates deficit `-5`;
+- `12:00`: another sale creates deficit `-3`;
+- a later receipt adds `+6`;
+- all `5` units of the `10:00` deficit are resolved first;
+- the remaining `1` receipt unit resolves one unit of the `12:00` deficit;
+- the `12:00` deficit remains open for `2` units.
+
+Reversing upload order must not change this matching result.
+
 ### Late-entered historical receipt
 
-- goods physically arrived on 31 July;
+- goods physically arrived on 31 July, so `businessDate = 2026-07-31`;
+- exact receipt time is not known, so `businessTime` remains absent rather than being invented;
+- supplier invoice/document number is stored separately;
 - the receipt was entered on 3 August;
 - a sale occurred on 1 August;
-- the receipt is inserted at its real 31 July business position and the 1 August sale cost is replayed.
+- `businessOrder` places the receipt at its established real 31 July position, and the 1 August sale cost is replayed.
 
 If the goods physically arrived only on 2 August, the 1 August sale is not replayed.
 
@@ -326,7 +376,7 @@ Rejected. A later receipt can inflate the cost of real remaining stock.
 
 Rejected by Product Owner. A genuinely later receipt did not exist at the earlier sale and cannot rewrite it. Only a fact that actually preceded the sale can change that sale's derived cost.
 
-### Use server recording order for same-time movements
+### Use server recording order when business order is unresolved
 
 Rejected by Product Owner. Upload and offline synchronization order are technical accidents, not business chronology.
 
@@ -347,6 +397,8 @@ Rejected. It hides location economics and values a sale using stock that was not
 - Both virtual and stock-tracked preparations are supported safely.
 - Negative stock remains operationally possible while showing when cost comes from the last known value or is unknown.
 - Late-entered historical receipts correct later food cost; genuinely new receipts leave earlier sale cost unchanged.
+- A genuine receipt updates the known estimate for subsequent negative-stock sales without rewriting previous sales.
+- Receipt cost remains traceable even when it resolves a deficit whose historical issue cost is unknown.
 - Warehouse economics and margin remain explainable.
 
 ### Negative / accepted cost
@@ -354,7 +406,7 @@ Rejected. It hides location economics and values a sale using stock that was not
 - Costing requires an ordered replay engine and dependency tracking.
 - Reports need cost-status and revision concepts.
 - A late-entered historical fact can legitimately change derived historical margin; a genuinely later fact cannot.
-- Resolving negative stock with a genuinely later receipt creates a current resolution delta whose official accounting destination still requires verification.
+- Resolving negative stock with a genuinely later receipt can create a current resolution delta or unallocated/unresolved receipt cost whose official accounting destination still requires verification.
 - Stock-tracked preparations require production discipline.
 - Unknown costs may remain until a genuine historical fact or explicit correction supplies defensible earlier cost.
 - Period closure requires business and legal policy before implementation.
@@ -374,20 +426,28 @@ When implementation is authorized, tests must include:
 9. Exact zero quantity/carrying-value closure with residual assignment.
 10. Negative issue with known and unknown prior cost.
 11. Genuinely later receipt leaving earlier sale cost unchanged, valuing remaining real stock at receipt cost, and creating a current resolution delta.
-12. Receipt entered 3 August but physically received 31 July changing a 1 August issue; receipt physically received 2 August not changing it.
-13. Multiple receipts calculated by business chronology rather than upload order.
-14. Same-time business ordering surviving reversed offline upload order; unresolved order never falling back to server time.
-15. Preorder creating no movement/cost and actual sale determining cost.
-16. New recipe/preparation version leaving old sales unchanged; explicit historical-error correction triggering audited replay.
-17. Replay idempotency and equal result hash on retry.
-18. Cascading recalculation through a stock-tracked preparation into a later dish cost.
-19. Report separation of final, estimated-from-last-known, unknown, and order-unresolved states.
+12. Receipt while stock remains negative updating the estimate only for subsequent negative-stock sales.
+13. Receipt quantity resolving an `UNKNOWN` deficit preserving its full acquisition cost separately as unallocated/unresolved cost.
+14. Multiple open deficits resolving strictly oldest first, including `-5`, `-3`, then `+6` leaving `2` of the second deficit open.
+15. Receipt entered 3 August but physically received 31 July changing a 1 August issue; receipt physically received 2 August not changing it.
+16. Mandatory business date, optional absent exact time, no fabricated time, and separate supplier document number.
+17. Multiple receipts calculated by business chronology rather than upload order.
+18. Business ordering surviving reversed offline upload order; unresolved order never falling back to server time.
+19. Preorder creating no movement/cost and actual sale determining cost.
+20. New recipe/preparation version leaving old sales unchanged; explicit historical-error correction triggering audited replay.
+21. Replay idempotency and equal result hash on retry.
+22. Cascading recalculation through a stock-tracked preparation into a later dish cost.
+23. Report separation of final, estimated-from-last-known, unknown, order-unresolved, and separately preserved unresolved receipt cost.
 
 ## Product Owner directions incorporated
 
 - [x] Business chronology outranks technical recording/upload order.
 - [x] Late-entered historical facts trigger affected replay; genuinely later facts do not rewrite earlier sales.
 - [x] Negative-stock sale uses the last known cost at its business position.
+- [x] Business date is mandatory; exact time is optional and never fabricated; supplier document number is separate.
+- [x] A genuine later receipt updates the estimate only for subsequent negative-stock sales.
+- [x] Receipt cost resolving an `UNKNOWN` deficit is preserved separately and is never back-assigned automatically.
+- [x] Multiple open deficits are resolved oldest first by business position.
 - [x] Preorder creates no inventory cost or write-off.
 - [x] Normal loss needs no comment; configured material deviation is highlighted; accident/total/unusual loss requires reason, permission, and audit.
 - [x] A new recipe/preparation version never recalculates old sales by itself.
@@ -402,8 +462,8 @@ When implementation is authorized, tests must include:
 - [ ] Accept moving weighted average per warehouse/item/valuation currency.
 - [ ] Accept quantity + carrying value as authoritative replay state.
 - [ ] Accept visible `ESTIMATED_FROM_LAST_KNOWN`, `UNKNOWN`, and `ORDER_UNRESOLVED` states.
-- [ ] Accept current `NegativeStockResolutionDelta` for a genuinely later receipt, with official accounting mapping deferred to verification.
-- [ ] Accept `businessOccurredAt + businessOrder` as costing order and `recordedAt` as audit-only time.
+- [ ] Accept the storage representation and naming for current `NegativeStockResolutionDelta` and unallocated/unresolved receipt cost; their preservation is fixed, while official accounting mapping remains deferred.
+- [ ] Accept `businessDate + businessOrder` as costing position, optional real `businessTime`, separate supplier document number, and `recordedAt` as audit-only time.
 - [ ] Accept append-only cost calculation revisions and latest-successful operational reporting.
 - [ ] Decide whether operational backdating may cross a closed period; official accounting treatment remains separately gated.
 
@@ -429,7 +489,7 @@ No fiscal/e-invoice behavior is defined by this ADR.
 - Recipe/modifier/effective-recipe lifecycle beyond the preparation foundation (Block E).
 - Offline clock and reconciliation rules (Block F).
 - Exact creation/reconciliation mechanism for cross-device `businessOrder` (Blocks C/F); server arrival is prohibited as fallback.
-- Official-accounting mapping of `NegativeStockResolutionDelta`.
+- Exact schema naming and official-accounting mapping of `NegativeStockResolutionDelta` and unallocated/unresolved receipt cost.
 - Labour and overhead allocation.
 - By-products, co-products, and multi-output allocation.
 - Transfer costing between warehouses and legal entities.
