@@ -1,10 +1,12 @@
 # ADR-0002: Money, Quantity, Units, and Rounding
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-08-06
+- **Accepted:** 2026-08-09
 - **Decision owners:** Product Owner and System Architect
 - **Related issue:** [#9 — Define money, units, yield and moving-average costing](https://github.com/millQ-dev/MillQ/issues/9)
 - **Product Owner correction:** [Block A correction decisions](https://github.com/millQ-dev/MillQ/issues/9#issuecomment-5205173415)
+- **Acceptance record:** [Block A owner/architecture acceptance](https://github.com/millQ-dev/MillQ/issues/9#issuecomment-5231317411)
 - **Related analysis:** [`block-a-money-units-yield-costing-analysis.md`](../architecture/block-a-money-units-yield-costing-analysis.md)
 - **Depends on:** [ADR-0001 — Initial technology stack](ADR-0001-initial-technology-stack.md)
 
@@ -23,7 +25,7 @@ This ADR does not define tax, fiscal/e-invoice, cash denomination, or foreign-ex
 
 ## Decision
 
-If accepted, the following rules are mandatory for all later schemas, APIs, calculations, and tests.
+The following accepted rules are mandatory for all later schemas, APIs, calculations, and tests.
 
 ### 1. Domain arithmetic does not use JavaScript `number`
 
@@ -253,19 +255,19 @@ When implementation is authorized, tests must include:
 - [x] `COUNT`/`ea` is limited to products genuinely consumed as whole pieces.
 - [x] No universal legally significant rounding rule is defined.
 
-## Remaining owner/architect acceptance checklist
+## Owner/architect acceptance record
 
-- [ ] Accept posted `Money` as integer minor units with captured ISO exponent.
-- [ ] Accept derived `CostValue` with 12 sub-minor digits.
-- [ ] Accept `NUMERIC(38, 12)` quantity and 18-decimal rate targets.
-- [ ] Accept canonical decimal strings in REST/JSON.
-- [ ] Accept versioned jurisdiction/context `RoundingPolicy` as the required official-calculation boundary.
-- [ ] Accept ties-to-even at the 12-digit internal cost boundary as a technical, non-legal rule.
-- [ ] Accept largest-remainder allocation only when selected by the applicable policy.
-- [ ] Accept one valuation currency per inventory ledger.
-- [ ] Accept `MASS`/`VOLUME`/`COUNT`, immutable item base unit, fixed and variable package handling, and explicit package versions.
-- [ ] Accept item-specific cross-dimension conversions only.
-- [ ] Accept the no-early-rounding recipe scaling rule.
+- [x] Posted `Money` as integer minor units with captured ISO exponent.
+- [x] Derived `CostValue` with 12 sub-minor digits.
+- [x] `NUMERIC(38, 12)` quantity and 18-decimal rate targets.
+- [x] Canonical decimal strings in REST/JSON.
+- [x] Versioned jurisdiction/context `RoundingPolicy` as the required official-calculation boundary.
+- [x] Ties-to-even at the 12-digit internal cost boundary as a technical, non-legal rule.
+- [x] Largest-remainder allocation only when selected by the applicable policy.
+- [x] One valuation currency per inventory ledger.
+- [x] `MASS`/`VOLUME`/`COUNT`, immutable item base unit, fixed and variable package handling, and explicit package versions.
+- [x] Item-specific cross-dimension conversions only.
+- [x] The no-early-rounding recipe scaling rule.
 
 ## Legal/accounting verification gates
 

@@ -1,14 +1,16 @@
 # ADR-0003: Yield, Preparations, and Moving-Average Costing
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-08-06
-- **Last updated:** 2026-08-08
+- **Last updated:** 2026-08-09
+- **Accepted:** 2026-08-09
 - **Decision owners:** Product Owner and System Architect
 - **Related issue:** [#9 — Define money, units, yield and moving-average costing](https://github.com/millQ-dev/MillQ/issues/9)
 - **Product Owner correction:** [Block A correction decisions](https://github.com/millQ-dev/MillQ/issues/9#issuecomment-5205173415)
 - **Product Owner final clarification:** [Block A final clarification](https://github.com/millQ-dev/MillQ/issues/9#issuecomment-5227924209)
+- **Acceptance record:** [Block A owner/architecture acceptance](https://github.com/millQ-dev/MillQ/issues/9#issuecomment-5231317411)
 - **Related analysis:** [`block-a-money-units-yield-costing-analysis.md`](../architecture/block-a-money-units-yield-costing-analysis.md)
-- **Depends on:** [ADR-0001](ADR-0001-initial-technology-stack.md), [Proposed ADR-0002](ADR-0002-money-quantity-units-rounding.md)
+- **Depends on:** [ADR-0001](ADR-0001-initial-technology-stack.md), [ADR-0002](ADR-0002-money-quantity-units-rounding.md)
 
 ## Context
 
@@ -23,7 +25,7 @@ If those concepts are combined, MillQ cannot measure yield variance. If a prepar
 
 ## Decision
 
-If accepted, the following rules govern later inventory, recipe, preparation, costing, and analytics implementation.
+The following accepted rules govern later inventory, recipe, preparation, costing, and analytics implementation.
 
 ### 1. Specification and batch are separate facts
 
@@ -452,20 +454,19 @@ When implementation is authorized, tests must include:
 - [x] Normal loss needs no comment; configured material deviation is highlighted; accident/total/unusual loss requires reason, permission, and audit.
 - [x] A new recipe/preparation version never recalculates old sales by itself.
 
-## Remaining owner/architect acceptance checklist
+## Owner/architect acceptance record
 
-- [ ] Accept normative `PreparationSpecification` and actual `ProductionBatch` as separate records.
-- [ ] Accept expected output for planning and actual output for batch unit cost.
-- [ ] Accept material-only preparation cost for the first complete operating chain.
-- [ ] Accept zero-output batches as reasoned production loss.
-- [ ] Accept explicit `VIRTUAL` versus `STOCK_TRACKED` mode and the no-double-write-off invariant.
-- [ ] Accept moving weighted average per warehouse/item/valuation currency.
-- [ ] Accept quantity + carrying value as authoritative replay state.
-- [ ] Accept visible `ESTIMATED_FROM_LAST_KNOWN`, `UNKNOWN`, and `ORDER_UNRESOLVED` states.
-- [ ] Accept the storage representation and naming for current `NegativeStockResolutionDelta` and unallocated/unresolved receipt cost; their preservation is fixed, while official accounting mapping remains deferred.
-- [ ] Accept `businessDate + businessOrder` as costing position, optional real `businessTime`, separate supplier document number, and `recordedAt` as audit-only time.
-- [ ] Accept append-only cost calculation revisions and latest-successful operational reporting.
-- [ ] Decide whether operational backdating may cross a closed period; official accounting treatment remains separately gated.
+- [x] Normative `PreparationSpecification` and actual `ProductionBatch` as separate records.
+- [x] Expected output for planning and actual output for batch unit cost.
+- [x] Material-only preparation cost for the first complete operating chain.
+- [x] Zero-output batches as reasoned production loss.
+- [x] Explicit `VIRTUAL` versus `STOCK_TRACKED` mode and the no-double-write-off invariant.
+- [x] Moving weighted average per warehouse/item/valuation currency.
+- [x] Quantity + carrying value as authoritative replay state.
+- [x] Visible `ESTIMATED_FROM_LAST_KNOWN`, `UNKNOWN`, and `ORDER_UNRESOLVED` states.
+- [x] Separate auditable representation for current `NegativeStockResolutionDelta` and unallocated/unresolved receipt cost, with exact schema naming and official accounting mapping deferred.
+- [x] `businessDate + businessOrder` as costing position, optional real `businessTime`, separate supplier document number, and `recordedAt` as audit-only time.
+- [x] Append-only cost calculation revisions and latest-successful operational reporting.
 
 ## Legal/accounting verification gates
 
@@ -490,6 +491,7 @@ No fiscal/e-invoice behavior is defined by this ADR.
 - Offline clock and reconciliation rules (Block F).
 - Exact creation/reconciliation mechanism for cross-device `businessOrder` (Blocks C/F); server arrival is prohibited as fallback.
 - Exact schema naming and official-accounting mapping of `NegativeStockResolutionDelta` and unallocated/unresolved receipt cost.
+- Whether operational backdating may cross a closed period; official accounting treatment remains separately gated.
 - Labour and overhead allocation.
 - By-products, co-products, and multi-output allocation.
 - Transfer costing between warehouses and legal entities.

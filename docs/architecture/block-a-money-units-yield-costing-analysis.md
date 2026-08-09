@@ -1,18 +1,19 @@
 # Block A Analysis: Money, Units, Yield, and Costing
 
-- **Status:** Revision 3 ready for independent review; ADR-0002 and ADR-0003 remain Proposed
-- **Date:** 2026-08-08
+- **Status:** Accepted — Block A owner/architecture review complete
+- **Date:** 2026-08-09
 - **Related issue:** [#9 — Define money, units, yield and moving-average costing](https://github.com/millQ-dev/MillQ/issues/9)
 - **Product Owner correction:** [Block A correction decisions](https://github.com/millQ-dev/MillQ/issues/9#issuecomment-5205173415)
 - **Product Owner final clarification:** [Block A final clarification](https://github.com/millQ-dev/MillQ/issues/9#issuecomment-5227924209)
-- **Proposed decisions:** [ADR-0002](../decisions/ADR-0002-money-quantity-units-rounding.md), [ADR-0003](../decisions/ADR-0003-yield-preparations-moving-average-costing.md)
+- **Acceptance record:** [Block A owner/architecture acceptance](https://github.com/millQ-dev/MillQ/issues/9#issuecomment-5231317411)
+- **Accepted decisions:** [ADR-0002](../decisions/ADR-0002-money-quantity-units-rounding.md), [ADR-0003](../decisions/ADR-0003-yield-preparations-moving-average-costing.md)
 - **Scope:** Architecture and domain rules only. No restaurant application feature implementation.
 
 ## 1. Executive summary
 
 Block A exists because a seemingly small rounding or yield decision can silently change stock, food cost, and margin across thousands of sales. ADR-0001 therefore blocks sales, inventory valuation, recipe write-off, and food-cost implementation until this foundation is accepted.
 
-The recommended direction is:
+The accepted direction is:
 
 1. Do not use JavaScript `number` for money, quantities, conversion factors, or cost calculations.
 2. Persist posted financial amounts as integer currency minor units, with currency code and minor-unit exponent captured on the fact.
@@ -30,7 +31,7 @@ The recommended direction is:
 14. Treat a preorder as non-costing: inventory cost is determined only at actual sale/write-off.
 15. Never recalculate old sales merely because a new recipe/preparation version was created.
 
-The numerical model is proposed for acceptance. Vietnam accounting treatment, tax/fiscal rounding, cash denomination rounding, foreign-exchange accounting, and closed-period correction policy still require dedicated local verification.
+The numerical and operational Block A model is accepted. Vietnam accounting treatment, tax/fiscal rounding, cash denomination rounding, foreign-exchange accounting, and closed-period correction policy still require dedicated local verification.
 
 ## 2. Authority and repository findings
 
@@ -50,7 +51,7 @@ For each subject this analysis separates:
 3. the proposed MillQ design;
 4. the Vietnam-specific implication;
 5. legal/accounting verification still required;
-6. Product Owner decision required;
+6. Product Owner decision / acceptance record;
 7. deferred questions.
 
 Public iiko manuals describe product behavior, not iiko's internal implementation. Some detailed manuals are archived product versions. They are useful evidence of domain behavior, but they are not treated as a current API contract and are not copied as MillQ architecture.
@@ -73,7 +74,7 @@ Public iiko documentation presents ingredient unit cost, recipe cost, and wareho
 - ECMAScript `Number` is IEEE 754 binary64. Decimal fractions and sufficiently large integers are not all exact.
 - PostgreSQL `numeric` is designed for exact monetary and quantity values, but a declared scale rounds values on storage. Boundaries must therefore be deliberate.
 
-**3. Proposed MillQ design**
+**3. Accepted MillQ design**
 
 - `Money` (posted customer/supplier/payment amount): integer minor-unit amount + ISO currency code + captured minor-unit exponent.
 - `CostValue` (derived carrying value): exact decimal expressed in the same minor-unit coordinate, with 12 fractional digits.
@@ -101,10 +102,10 @@ Public iiko documentation presents ingredient unit cost, recipe cost, and wareho
 **6. Product Owner decision / review status**
 
 - Fixed: do not define a universal legally significant rounding rule before country/context research.
-- Accept or reject the split between integer posted money and sub-minor derived cost.
-- Accept or replace the proposed internal technical ties-to-even cost boundary.
-- Accept decimal strings as the API representation.
-- Confirm that the inventory ledger has exactly one valuation currency and never mixes currencies.
+- Accepted: split integer posted money from sub-minor derived cost.
+- Accepted: internal technical ties-to-even cost boundary.
+- Accepted: decimal strings as the API representation.
+- Accepted: one valuation currency per inventory ledger; currencies are never mixed in one moving average.
 
 **7. Deferred question**
 
@@ -125,7 +126,7 @@ Current public iikoMini documentation uses a base unit for a product and support
 - Mass-to-volume conversion is ingredient-specific and often depends on density, preparation, and measurement conditions.
 - Historical documents must retain the conversion that was used when posted; changing a supplier pack cannot rewrite old stock.
 
-**3. Proposed MillQ design**
+**3. Accepted MillQ design**
 
 - Quantity is an exact decimal with 12 fractional digits in a stock item's base unit.
 - Supported initial dimensions: `MASS`, `VOLUME`, `COUNT`.
@@ -155,9 +156,9 @@ Vietnamese supplier practice may use local package names, variable-weight cases,
 - Fixed: supplier package and inventory unit are separate.
 - Fixed: variable-weight packages store actual accepted quantity.
 - Fixed: `COUNT`/`ea` is limited to genuinely piece-consumed products.
-- Accept initial dimensions and recommended canonical units.
-- Confirm that item base unit becomes immutable after stock activity.
-- Confirm that mass/volume conversion always needs item-specific evidence.
+- Accepted: initial dimensions and recommended canonical units.
+- Accepted: item base unit becomes immutable after stock activity except through explicit migration.
+- Accepted: mass/volume conversion always needs item-specific evidence.
 
 **7. Deferred question**
 
@@ -179,7 +180,7 @@ iiko documentation shows gross and net ingredient quantities, processing loss, f
 - Institute of Child Nutrition guidance scales every ingredient by one common factor and determines actual batch yield by weighing the produced batch.
 - Yield greater than 100% is possible when water is absorbed or ingredients are added. It is not automatically an error.
 
-**3. Proposed MillQ design**
+**3. Accepted MillQ design**
 
 - A versioned `PreparationSpecification` stores expected inputs, expected output, process losses, preparation steps, and a scale basis.
 - Creating a new specification version never changes old sales. Only a dedicated historical-error correction with permission, reason, and audit may change a historical reference and trigger replay.
@@ -206,9 +207,9 @@ Local ingredients, supplier trimming, humidity, and kitchen technique may differ
 
 - Fixed: normal normative loss needs no comment; configured material deviation is highlighted; accident/total/unusual loss requires reason, permission, and audit.
 - Fixed: a new recipe/preparation version never recalculates old sales by itself.
-- Accept expected output as the primary denominator for normative unit cost.
-- Accept actual output as the primary denominator for actual batch unit cost.
-- Accept yield above 100% and explicitly based yield metrics.
+- Accepted: expected output as the primary denominator for normative unit cost.
+- Accepted: actual output as the primary denominator for actual batch unit cost.
+- Accepted: yield above 100% and explicitly based yield metrics.
 
 **7. Deferred question**
 
@@ -226,7 +227,7 @@ Public iiko manuals distinguish recipe-based ingredient write-off from storing a
 
 A standard recipe answers "what should happen". A production record answers "what did happen". Combining them destroys the ability to measure yield variance and can write off the same ingredients twice.
 
-**3. Proposed MillQ design**
+**3. Accepted MillQ design**
 
 - `PreparationSpecification`: immutable versioned norm.
 - `ProductionBatch`: actual event referencing one specification version, with actual inputs, actual outputs, waste/loss, responsible employee, warehouse, and timestamps.
@@ -249,11 +250,11 @@ Restaurant-specific production practices and staff language affect workflow, not
 
 IAS 2 and Vietnam accounting guidance can include conversion costs in inventory cost. A local accountant must confirm when labour, production overhead, freight, non-refundable tax, and normal/abnormal loss enter official inventory value.
 
-**6. Product Owner decision required**
+**6. Product Owner decision / acceptance record**
 
-- Accept material-only preparation cost for the first operating chain.
-- Accept explicit virtual versus stock-tracked mode and the no-double-write-off invariant.
-- Accept zero-output handling as loss requiring a reason.
+- Accepted: material-only preparation cost for the first operating chain.
+- Accepted: explicit virtual versus stock-tracked mode and the no-double-write-off invariant.
+- Accepted: zero-output handling as loss requiring a reason.
 
 **7. Deferred question**
 
@@ -274,7 +275,7 @@ Public iiko manuals show warehouse-specific cost. Under weighted average, existi
 - Averaging across warehouses hides the actual cost of the warehouse from which stock was consumed.
 - The source of truth should be quantity plus carrying value; rounded unit cost is a derived rate.
 
-**3. Proposed MillQ design**
+**3. Accepted MillQ design**
 
 Cost state is scoped by:
 
@@ -308,10 +309,10 @@ Vietnam's Ministry of Finance material publicly lists weighted average among inv
 - Confirm which purchase, freight, tax, and production costs form the inbound cost basis.
 - Confirm period-close and correction presentation.
 
-**6. Product Owner decision required**
+**6. Product Owner decision / acceptance record**
 
-- Accept per-warehouse moving weighted average.
-- Accept quantity and carrying value, rather than rounded unit cost, as the replay state.
+- Accepted: per-warehouse moving weighted average.
+- Accepted: quantity and carrying value, rather than rounded unit cost, as the replay state.
 
 **7. Deferred question**
 
@@ -332,7 +333,7 @@ iiko publicly allows negative stock. Its manuals describe correcting earlier neg
 - A new recipe/preparation version is not a historical correction and cannot change old sales.
 - Recalculation must be deterministic, restartable, and auditable.
 
-**3. Proposed MillQ design**
+**3. Accepted MillQ design**
 
 - Quantity may go below zero and is always visibly flagged.
 - The deficit part of an issue uses the last known warehouse issue-cost estimate at that business position and is labeled `ESTIMATED_FROM_LAST_KNOWN`; if none exists, cost is `UNKNOWN`.
@@ -370,9 +371,9 @@ Backdated supplier paperwork can occur operationally, but its treatment across a
 - Fixed: receipt cost resolving an `UNKNOWN` deficit is preserved separately as unallocated/unresolved cost.
 - Fixed: multiple open deficits are resolved oldest first by business position.
 - Fixed: preorder creates no inventory cost or write-off.
-- Accept visible `ESTIMATED_FROM_LAST_KNOWN`/`UNKNOWN`/`ORDER_UNRESOLVED` states.
-- Accept the storage representation/naming for `NegativeStockResolutionDelta` and unallocated/unresolved receipt cost; their official accounting mapping remains deferred.
-- Accept latest-revision reporting as the operational default, with full history retained.
+- Accepted: visible `ESTIMATED_FROM_LAST_KNOWN`/`UNKNOWN`/`ORDER_UNRESOLVED` states.
+- Accepted: separate auditable representation for `NegativeStockResolutionDelta` and unallocated/unresolved receipt cost; exact schema naming and official accounting mapping remain deferred.
+- Accepted: latest-revision reporting as the operational default, with full history retained.
 - Decide whether backdating is permitted past an operationally closed period; legal posting remains separately gated.
 
 **7. Deferred question**
@@ -495,7 +496,7 @@ Dish consumes `10 g` of that tracked preparation.
 
 ## 8. Product Owner decisions incorporated in revision 3
 
-The following directions are authoritative inputs. The ADRs remain Proposed until their revised wording is independently reviewed and accepted:
+The following directions are authoritative inputs accepted by owner/architecture review on 2026-08-09:
 
 1. Business chronology outranks technical recording/upload order; offline synchronization must preserve it.
 2. Late-entered historical facts trigger affected replay.
@@ -511,17 +512,16 @@ The following directions are authoritative inputs. The ADRs remain Proposed unti
 12. Receipt acquisition cost resolving an `UNKNOWN` deficit is preserved separately until a dedicated accounting decision.
 13. Multiple open deficits are resolved oldest first by business position.
 
-### Remaining architecture acceptance items
+### Owner/architecture acceptance record
 
-1. Exact money/decimal types and internal cost precision from ADR-0002.
-2. One valuation currency per inventory ledger.
-3. Mass/volume/count dimensions and immutable inventory base unit.
-4. Expected versus actual yield and material-only first-chain preparation cost.
-5. Virtual versus stock-tracked preparation and no-double-write-off invariant.
-6. Per-warehouse moving weighted average and quantity/carrying-value replay state.
-7. Storage naming/representation for current resolution delta and unallocated/unresolved receipt cost, with official accounting mapping deferred.
-8. Latest successful cost revision as operational report default while preserving history.
-9. Whether operational backdating may cross a closed period; official accounting treatment remains blocked on local verification.
+1. Accepted exact money/decimal types and internal cost precision from ADR-0002.
+2. Accepted one valuation currency per inventory ledger.
+3. Accepted mass/volume/count dimensions and immutable inventory base unit.
+4. Accepted expected versus actual yield and material-only first-chain preparation cost.
+5. Accepted virtual versus stock-tracked preparation and no-double-write-off invariant.
+6. Accepted per-warehouse moving weighted average and quantity/carrying-value replay state.
+7. Accepted separate auditable representation for current resolution delta and unallocated/unresolved receipt cost; exact schema naming and official accounting mapping remain deferred.
+8. Accepted latest successful cost revision as operational report default while preserving history.
 
 ### Change list from the first independent review
 
@@ -549,6 +549,7 @@ The following directions are authoritative inputs. The ADRs remain Proposed unti
 - Restaurant feature code and database migrations.
 - Exact decimal, ORM, migration, and test libraries.
 - Document state machine, locks, idempotency, and offline reconciliation.
+- Whether operational backdating may cross an operationally closed period; official accounting treatment remains blocked on local verification.
 - Tax, fiscal/e-invoice, and cash denomination rules.
 - Foreign-exchange gains/losses and source selection.
 - Labour and production-overhead allocation.
