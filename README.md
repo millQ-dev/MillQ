@@ -2,28 +2,58 @@
 
 MillQ is a modern restaurant management platform for Vietnam.
 
-The long-term product vision includes POS, inventory management, warehouse accounting, purchasing, recipes, production, food cost, CRM, analytics, finance, employee management, and business automation.
+The product consists of two deliberately separated capabilities:
 
-This repository currently contains only the project foundation. Application code, frameworks, and infrastructure decisions will be added in later stages.
-
-## Goals
-
-- Build a durable enterprise SaaS foundation for restaurant operations
-- Support multi-module growth without premature technology lock-in
-- Keep architecture, documentation, and delivery practices explicit and reviewable
+1. **Operational Core** — authoritative POS, inventory, purchasing, recipes, payments, audit
+2. **Production Intelligence** — recommendations and analytics built on operational facts (future sellable module)
 
 ## Repository structure
 
 ```text
 .
-├── apps/             # Deployable applications (future)
-├── packages/         # Shared libraries and modules (future)
-├── infrastructure/   # Infrastructure definitions (future)
-├── docs/             # Product and engineering documentation
-├── tests/            # Cross-cutting or shared test assets (future)
-└── .github/          # GitHub project configuration (future)
+├── apps/
+│   ├── api/          # Node.js Operational Core HTTP service
+│   └── web/          # React client shell
+├── packages/
+│   ├── domain/       # Money, quantity, conversion, yield (ADR-0002/0003)
+│   └── contracts/    # Operational facts and Intelligence DTOs
+├── infrastructure/   # Docker Compose (PostgreSQL local dev)
+├── docs/             # Architecture, ADRs, processes
+└── tests/            # Cross-cutting test assets (future)
 ```
+
+## Local development
+
+Requirements: Node.js ≥ 20, pnpm 9, Docker.
+
+```bash
+cp .env.example .env
+docker compose -f infrastructure/docker-compose.yml up -d
+pnpm install
+pnpm --filter @millq/api run migrate
+pnpm dev
+```
+
+- API health: http://localhost:3000/health
+- Web shell: http://localhost:5173
+
+## Commands
+
+| Command | Description |
+| --- | --- |
+| `pnpm install` | Install workspace dependencies |
+| `pnpm dev` | Run API and web in parallel |
+| `pnpm test` | Run all package tests |
+| `pnpm build` | Build all packages |
+| `pnpm typecheck` | Typecheck all packages |
+
+## Documentation
+
+- [`PROJECT_CHARTER.md`](PROJECT_CHARTER.md) — product authority
+- [`AGENTS.md`](AGENTS.md) — agent operating rules
+- [`docs/processes/current-state.md`](docs/processes/current-state.md) — what exists now
+- [`docs/decisions/`](docs/decisions/) — ADRs
 
 ## Status
 
-Foundation only. No application runtime, dependencies, or CI/CD are defined yet.
+Foundation operational core block: runnable monorepo skeleton, shared domain math, fact contracts, architecture for Intelligence boundary and offline operation. Full POS and business workflows are not implemented yet.
