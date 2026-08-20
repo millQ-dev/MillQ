@@ -1,6 +1,6 @@
 # MillQ Current State
 
-**Checkpoint:** branch `feature/foundation-operational-core` @ `1d7caf8` (foundation operational core block)  
+**Checkpoint:** branch `feature/foundation-operational-core` @ `afe3111` (foundation operational core block)  
 **Base:** `main` @ `f568789` (Block A accepted)  
 **Updated:** 2026-08-19
 
