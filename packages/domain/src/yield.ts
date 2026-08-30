@@ -1,12 +1,22 @@
-import { parseCanonicalDecimal } from './decimal.js';
-import { computeUnitCost, moneyToCostValue, type CostValue } from './cost-value.js';
+import { parseCanonicalDecimal, toCanonicalDecimal } from './decimal.js';
+import {
+  computeUnitCost,
+  createCostValue,
+  moneyToCostValue,
+  roundCostValue,
+  type CostValue,
+} from './cost-value.js';
 import type { Money } from './money.js';
 import { InvalidDecimalError } from './errors.js';
 
+/**
+ * Yield / preparation cost inputs use CostValue (internal derived cost),
+ * not posted Money currency quantum (ADR-0002 / ADR-0003).
+ */
 export type YieldNormalizationInput = {
   readonly inputQuantity: string;
   readonly outputQuantity: string;
-  readonly totalInputCost: Money;
+  readonly totalInputCost: CostValue;
 };
 
 export type YieldNormalizationResult = {
@@ -17,16 +27,30 @@ export type YieldNormalizationResult = {
 /**
  * ADR-0003 garlic example: normalized unit cost must stay identical under proportional scaling.
  * (s × inputCost) / (s × outputQty) = inputCost / outputQty
+ *
+ * Scaling must use CostValue precision — never round a scaled derived cost back to integer Money.
  */
 export function normalizeYieldUnitCost(input: YieldNormalizationInput): YieldNormalizationResult {
-  const inQty = parseCanonicalDecimal(input.inputQuantity);
   const outQty = parseCanonicalDecimal(input.outputQuantity);
   if (outQty.isZero()) {
     throw new InvalidDecimalError('Output quantity cannot be zero for unit cost normalization');
   }
-  const totalCost = moneyToCostValue(input.totalInputCost);
-  const unitCost = computeUnitCost(totalCost, input.outputQuantity);
+  parseCanonicalDecimal(input.inputQuantity);
+  const unitCost = computeUnitCost(input.totalInputCost, input.outputQuantity);
   return { unitCost, scaleInvariant: true };
+}
+
+/** Convenience: posted Money converted once to CostValue, then normalized. */
+export function normalizeYieldUnitCostFromMoney(
+  inputQuantity: string,
+  outputQuantity: string,
+  totalInputCost: Money,
+): YieldNormalizationResult {
+  return normalizeYieldUnitCost({
+    inputQuantity,
+    outputQuantity,
+    totalInputCost: moneyToCostValue(totalInputCost),
+  });
 }
 
 export function verifyProportionalScaleInvariant(
@@ -40,26 +64,35 @@ export function verifyProportionalScaleInvariant(
   const baseResult = normalizeYieldUnitCost(base);
   const scaledInputQty = parseCanonicalDecimal(base.inputQuantity).mul(s);
   const scaledOutputQty = parseCanonicalDecimal(base.outputQuantity).mul(s);
-  const scaledCostMinor = parseCanonicalDecimal(base.totalInputCost.amountMinor).mul(s);
+  const scaledCostExact = parseCanonicalDecimal(base.totalInputCost.amountMinorUnits).mul(s);
   const scaled: YieldNormalizationInput = {
-    inputQuantity: scaledInputQty.toFixed(),
-    outputQuantity: scaledOutputQty.toFixed(),
-    totalInputCost: {
-      ...base.totalInputCost,
-      amountMinor: scaledCostMinor.toFixed(0),
-    },
+    inputQuantity: toCanonicalDecimal(scaledInputQty),
+    outputQuantity: toCanonicalDecimal(scaledOutputQty),
+    totalInputCost: roundCostValue(
+      scaledCostExact,
+      base.totalInputCost.currencyCode,
+      base.totalInputCost.minorUnitExponent,
+    ),
   };
   const scaledResult = normalizeYieldUnitCost(scaled);
   return baseResult.unitCost.amountMinorUnits === scaledResult.unitCost.amountMinorUnits;
 }
 
 export function computeActualBatchUnitCost(
-  actualInputCost: Money,
+  actualInputCost: CostValue | Money,
   actualOutputQuantity: string,
 ): CostValue | null {
   const outQty = parseCanonicalDecimal(actualOutputQuantity);
   if (outQty.isZero()) {
     return null;
   }
-  return computeUnitCost(moneyToCostValue(actualInputCost), actualOutputQuantity);
+  const cost: CostValue =
+    'amountMinorUnits' in actualInputCost
+      ? actualInputCost
+      : moneyToCostValue(actualInputCost);
+  return computeUnitCost(cost, actualOutputQuantity);
+}
+
+export function costValueFromMinor(amountMinorUnits: string, currencyCode: string, minorUnitExponent: number): CostValue {
+  return createCostValue(amountMinorUnits, currencyCode, minorUnitExponent);
 }

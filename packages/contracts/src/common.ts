@@ -21,20 +21,7 @@ export const operationalContextSchema = z.object({
 
 export type OperationalContext = z.infer<typeof operationalContextSchema>;
 
-export const factEnvelopeSchema = z.object({
-  factId: z.string().uuid(),
-  factType: z.string().min(1),
-  idempotencyKey: z.string().min(1),
-  occurredAt: z.string().datetime(),
-  recordedAt: z.string().datetime(),
-  position: businessPositionSchema,
-  context: operationalContextSchema,
-  payload: z.record(z.unknown()),
-});
-
-export type FactEnvelope = z.infer<typeof factEnvelopeSchema>;
-
-/** Operational fact type identifiers for Intelligence consumption */
+/** Authoritative operational fact type identifiers */
 export const OperationalFactType = {
   GoodsReceived: 'GoodsReceived',
   PurchasePriceRecorded: 'PurchasePriceRecorded',
@@ -52,3 +39,28 @@ export const OperationalFactType = {
 
 export type OperationalFactTypeName =
   (typeof OperationalFactType)[keyof typeof OperationalFactType];
+
+export const operationalFactTypeSchema = z.enum([
+  OperationalFactType.GoodsReceived,
+  OperationalFactType.PurchasePriceRecorded,
+  OperationalFactType.RecipeVersionActivated,
+  OperationalFactType.PreparationProduced,
+  OperationalFactType.InventoryAdjusted,
+  OperationalFactType.InventoryConsumed,
+  OperationalFactType.OrderOpened,
+  OperationalFactType.OrderItemAdded,
+  OperationalFactType.OrderPaid,
+  OperationalFactType.OrderCancelled,
+  OperationalFactType.PaymentRecorded,
+  OperationalFactType.DangerousOperationRecorded,
+]);
+
+/** Envelope without typed payload — used only for shared fields. Authoritative facts use operationalFactSchema. */
+export const factEnvelopeBaseSchema = z.object({
+  factId: z.string().uuid(),
+  idempotencyKey: z.string().min(1),
+  occurredAt: z.string().datetime(),
+  recordedAt: z.string().datetime(),
+  position: businessPositionSchema,
+  context: operationalContextSchema,
+});

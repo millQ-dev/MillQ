@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   createMoney,
   createQuantity,
+  createCostValue,
+  moneyToCostValue,
   packageToBaseQuantity,
   variableWeightToBase,
   rejectCrossDimension,
   normalizeYieldUnitCost,
+  normalizeYieldUnitCostFromMoney,
   verifyProportionalScaleInvariant,
   computeActualBatchUnitCost,
   IncompatibleUnitError,
@@ -63,25 +66,48 @@ describe('yield normalization', () => {
   const garlicBase = {
     inputQuantity: '1000',
     outputQuantity: '825',
-    totalInputCost: createMoney('100000', 'VND', 0),
+    totalInputCost: moneyToCostValue(createMoney('100000', 'VND', 0)),
   };
 
-  it('normalizes garlic unit cost', () => {
+  it('normalizes garlic unit cost from CostValue', () => {
     const { unitCost } = normalizeYieldUnitCost(garlicBase);
     expect(unitCost.amountMinorUnits).toBe('121.212121212121');
   });
 
-  it('keeps unit cost invariant under scale 0.2 (200g → 165g)', () => {
-    expect(verifyProportionalScaleInvariant(garlicBase, '0.2')).toBe(true);
+  it('normalizes from posted Money via one-time conversion', () => {
+    const { unitCost } = normalizeYieldUnitCostFromMoney(
+      '1000',
+      '825',
+      createMoney('100000', 'VND', 0),
+    );
+    expect(unitCost.amountMinorUnits).toBe('121.212121212121');
   });
 
-  it('computes actual batch unit cost', () => {
-    const unitCost = computeActualBatchUnitCost(createMoney('50000', 'VND', 0), '200');
+  it.each(['0.2', '0.333', '1.5', '2.75'] as const)(
+    'keeps unit cost invariant under scale %s using CostValue (not Money rounding)',
+    (scale) => {
+      expect(verifyProportionalScaleInvariant(garlicBase, scale)).toBe(true);
+    },
+  );
+
+  it('scale 0.2 matches 200g / 20000 VND → 165g example', () => {
+    const scaled = {
+      inputQuantity: '200',
+      outputQuantity: '165',
+      totalInputCost: createCostValue('20000', 'VND', 0),
+    };
+    const base = normalizeYieldUnitCost(garlicBase);
+    const scaledResult = normalizeYieldUnitCost(scaled);
+    expect(scaledResult.unitCost.amountMinorUnits).toBe(base.unitCost.amountMinorUnits);
+  });
+
+  it('computes actual batch unit cost 50000 / 200 g → 250', () => {
+    const unitCost = computeActualBatchUnitCost(createCostValue('50000', 'VND', 0), '200');
     expect(unitCost?.amountMinorUnits).toBe('250');
   });
 
   it('returns null unit cost for zero output batch (loss)', () => {
-    expect(computeActualBatchUnitCost(createMoney('50000', 'VND', 0), '0')).toBeNull();
+    expect(computeActualBatchUnitCost(createCostValue('50000', 'VND', 0), '0')).toBeNull();
   });
 });
 

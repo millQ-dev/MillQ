@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { factEnvelopeSchema, OperationalFactType } from './common.js';
+import {
+  factEnvelopeBaseSchema,
+  OperationalFactType,
+  operationalFactTypeSchema,
+  type OperationalFactTypeName,
+} from './common.js';
 
 const moneyPayload = z.object({
   amountMinor: z.string(),
@@ -13,6 +18,12 @@ const quantityPayload = z.object({
   dimension: z.enum(['MASS', 'VOLUME', 'COUNT']),
 });
 
+const costPayload = z.object({
+  amountMinorUnits: z.string(),
+  currencyCode: z.string().length(3),
+  minorUnitExponent: z.number().int().min(0).max(4),
+});
+
 export const goodsReceivedPayloadSchema = z.object({
   stockItemId: z.string().uuid(),
   supplierReceiptId: z.string().uuid(),
@@ -20,11 +31,57 @@ export const goodsReceivedPayloadSchema = z.object({
   purchasePrice: moneyPayload,
 });
 
+export const purchasePriceRecordedPayloadSchema = z.object({
+  stockItemId: z.string().uuid(),
+  supplierId: z.string().uuid().optional(),
+  purchasePrice: moneyPayload,
+  packageDefinitionId: z.string().uuid().optional(),
+});
+
+export const recipeVersionActivatedPayloadSchema = z.object({
+  recipeId: z.string().uuid(),
+  recipeVersionId: z.string().uuid(),
+  activatedAt: z.string().datetime(),
+});
+
 export const preparationProducedPayloadSchema = z.object({
   preparationSpecVersionId: z.string().uuid(),
   productionBatchId: z.string().uuid(),
-  actualInputCost: moneyPayload,
+  /** Derived input carrying cost — CostValue semantics (ADR-0002), not posted Money */
+  actualInputCost: costPayload,
   actualOutputQuantity: quantityPayload,
+});
+
+export const inventoryAdjustedPayloadSchema = z.object({
+  stockItemId: z.string().uuid(),
+  warehouseId: z.string().uuid(),
+  quantityDelta: quantityPayload,
+  reason: z.string().min(1),
+});
+
+export const inventoryConsumedPayloadSchema = z.object({
+  stockItemId: z.string().uuid(),
+  warehouseId: z.string().uuid(),
+  quantity: quantityPayload,
+  sourceOrderId: z.string().uuid().optional(),
+  sourcePreparationBatchId: z.string().uuid().optional(),
+});
+
+export const orderOpenedPayloadSchema = z.object({
+  orderId: z.string().uuid(),
+  channel: z.string().min(1),
+});
+
+export const orderItemAddedPayloadSchema = z.object({
+  orderId: z.string().uuid(),
+  orderItemId: z.string().uuid(),
+  menuItemId: z.string().uuid(),
+  quantity: quantityPayload,
+});
+
+export const orderPaidPayloadSchema = z.object({
+  orderId: z.string().uuid(),
+  totalPaid: moneyPayload,
 });
 
 export const orderCancelledPayloadSchema = z.object({
@@ -33,22 +90,116 @@ export const orderCancelledPayloadSchema = z.object({
   inventoryWriteOff: z.boolean(),
 });
 
+export const paymentRecordedPayloadSchema = z.object({
+  paymentId: z.string().uuid(),
+  orderId: z.string().uuid().optional(),
+  amount: moneyPayload,
+  method: z.string().min(1),
+});
+
+export const dangerousOperationRecordedPayloadSchema = z.object({
+  operationType: z.string().min(1),
+  targetRef: z.string().min(1),
+  reason: z.string().min(1),
+  authorizedBy: z.string().uuid(),
+});
+
+/**
+ * Authoritative mapping: every OperationalFactType has exactly one payload schema.
+ * Adding a new fact type requires adding its schema here — no generic JSON fallback.
+ */
 export const operationalFactPayloadSchemas = {
   [OperationalFactType.GoodsReceived]: goodsReceivedPayloadSchema,
+  [OperationalFactType.PurchasePriceRecorded]: purchasePriceRecordedPayloadSchema,
+  [OperationalFactType.RecipeVersionActivated]: recipeVersionActivatedPayloadSchema,
   [OperationalFactType.PreparationProduced]: preparationProducedPayloadSchema,
+  [OperationalFactType.InventoryAdjusted]: inventoryAdjustedPayloadSchema,
+  [OperationalFactType.InventoryConsumed]: inventoryConsumedPayloadSchema,
+  [OperationalFactType.OrderOpened]: orderOpenedPayloadSchema,
+  [OperationalFactType.OrderItemAdded]: orderItemAddedPayloadSchema,
+  [OperationalFactType.OrderPaid]: orderPaidPayloadSchema,
   [OperationalFactType.OrderCancelled]: orderCancelledPayloadSchema,
-} as const;
+  [OperationalFactType.PaymentRecorded]: paymentRecordedPayloadSchema,
+  [OperationalFactType.DangerousOperationRecorded]: dangerousOperationRecordedPayloadSchema,
+} as const satisfies Record<OperationalFactTypeName, z.ZodTypeAny>;
 
-export type GoodsReceivedPayload = z.infer<typeof goodsReceivedPayloadSchema>;
-export type PreparationProducedPayload = z.infer<typeof preparationProducedPayloadSchema>;
+type PayloadSchemas = typeof operationalFactPayloadSchemas;
 
-export function createFactEnvelope(
-  input: Omit<z.infer<typeof factEnvelopeSchema>, 'recordedAt'> & { recordedAt?: string },
-): z.infer<typeof factEnvelopeSchema> {
-  return factEnvelopeSchema.parse({
+export type PayloadForFactType<T extends keyof PayloadSchemas> = z.infer<PayloadSchemas[T]>;
+
+export type OperationalFact = {
+  [K in OperationalFactTypeName]: z.infer<typeof factEnvelopeBaseSchema> & {
+    factType: K;
+    payload: PayloadForFactType<K>;
+  };
+}[OperationalFactTypeName];
+
+export class UnknownOperationalFactTypeError extends Error {
+  readonly code = 'UNKNOWN_OPERATIONAL_FACT_TYPE' as const;
+  constructor(readonly factType: string) {
+    super(`Unsupported operational fact type: ${factType}`);
+    this.name = 'UnknownOperationalFactTypeError';
+  }
+}
+
+export class OperationalFactPayloadMismatchError extends Error {
+  readonly code = 'OPERATIONAL_FACT_PAYLOAD_MISMATCH' as const;
+  constructor(
+    readonly factType: string,
+    readonly details: string,
+  ) {
+    super(`Payload does not match factType ${factType}: ${details}`);
+    this.name = 'OperationalFactPayloadMismatchError';
+  }
+}
+
+/**
+ * Authoritative ingestion validator: envelope + payload for the exact factType.
+ * Unknown fact types and mismatched payloads are rejected.
+ */
+export function parseOperationalFact(raw: unknown): OperationalFact {
+  if (raw === null || typeof raw !== 'object') {
+    throw new OperationalFactPayloadMismatchError('unknown', 'fact must be an object');
+  }
+  const candidate = raw as Record<string, unknown>;
+  const typeResult = operationalFactTypeSchema.safeParse(candidate.factType);
+  if (!typeResult.success) {
+    throw new UnknownOperationalFactTypeError(String(candidate.factType ?? ''));
+  }
+  const factType = typeResult.data;
+  const baseResult = factEnvelopeBaseSchema.safeParse(candidate);
+  if (!baseResult.success) {
+    throw new OperationalFactPayloadMismatchError(
+      factType,
+      baseResult.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; '),
+    );
+  }
+  const payloadResult = operationalFactPayloadSchemas[factType].safeParse(candidate.payload);
+  if (!payloadResult.success) {
+    throw new OperationalFactPayloadMismatchError(
+      factType,
+      payloadResult.error.issues.map((i) => `payload.${i.path.join('.')}: ${i.message}`).join('; '),
+    );
+  }
+  return {
+    ...baseResult.data,
+    factType,
+    payload: payloadResult.data,
+  } as OperationalFact;
+}
+
+export function createOperationalFact(
+  input: Omit<OperationalFact, 'recordedAt'> & { recordedAt?: string },
+): OperationalFact {
+  return parseOperationalFact({
     ...input,
     recordedAt: input.recordedAt ?? new Date().toISOString(),
   });
 }
 
-export { factEnvelopeSchema, OperationalFactType };
+/** @deprecated Prefer createOperationalFact */
+export const createFactEnvelope = createOperationalFact;
+
+export type GoodsReceivedPayload = z.infer<typeof goodsReceivedPayloadSchema>;
+export type PreparationProducedPayload = z.infer<typeof preparationProducedPayloadSchema>;
+export type OrderOpenedPayload = z.infer<typeof orderOpenedPayloadSchema>;
