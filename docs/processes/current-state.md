@@ -1,9 +1,10 @@
 # MillQ Current State
 
-**Checkpoint:** branch `feature/foundation-operational-core` @ `d36caed`  
+**Checkpoint:** branch `feature/foundation-operational-core` @ `a14c9ae`  
 **Base:** `main` @ `f568789` (Block A accepted)  
 **Updated:** 2026-08-30  
-**Issue:** https://github.com/millQ-dev/MillQ/issues/14
+**Issue:** https://github.com/millQ-dev/MillQ/issues/14  
+**PR:** https://github.com/millQ-dev/MillQ/pull/15
 
 ## Accepted decisions
 
@@ -48,7 +49,7 @@ Foundation domain map **provisionally aligns** with Block B proposal and does **
 
 - PostgreSQL local (Docker Compose file and/or local Homebrew Postgres)
 - `apps/api/migrations/001_foundation.sql` — `operational_fact_feed` + `recommendations` (feed ≠ module source of truth)
-- GitHub Actions CI: typecheck, test, build, migrate smoke, `/health`
+- CI workflow definition: `infrastructure/ci/github-actions-ci.yml` (activation into `.github/workflows/` needs `workflow` OAuth scope)
 
 ## Explicitly not started
 
