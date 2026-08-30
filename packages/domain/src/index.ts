@@ -35,8 +35,10 @@ export {
 } from './conversion.js';
 export {
   normalizeYieldUnitCost,
+  normalizeYieldUnitCostFromMoney,
   verifyProportionalScaleInvariant,
   computeActualBatchUnitCost,
+  costValueFromMinor,
   type YieldNormalizationInput,
   type YieldNormalizationResult,
 } from './yield.js';
