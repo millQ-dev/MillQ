@@ -93,13 +93,15 @@ Do not let docs drift from implemented behavior.
 
 ## 8. Git and Pull Request rules
 
-- GitHub is the source of truth.
-- Work must be linked to an Issue.
+- Cursor Origin is the source of truth. GitHub is a backup mirror only.
+- Start Cloud Agents against the Origin repository, not GitHub.
+- Work must be linked to a Cloud Agent run and/or an Origin pull request. Do not open new GitHub issues for the same work.
 - Allowed branch prefixes are `feature/`, `fix/`, and `chore/`.
 - Commits must be atomic and use Conventional Commit style.
-- Pull Requests must include summary, scope, testing, risks, and linked Issue.
+- Pull Requests must include summary, scope, testing, risks, and linked work item, and must be opened on Origin.
 - Do not push directly to `main`.
 - Do not merge your own work without the required review process.
+- Follow `docs/processes/origin-github-hosting.md` and ADR-0004. Do not use Origin’s Sync-from-GitHub mode (that keeps GitHub as source).
 
 ## 9. AI role separation
 
@@ -117,7 +119,7 @@ A change is complete only when:
 - relevant tests pass
 - documentation is updated
 - migrations are reviewed when applicable
-- the PR is linked to the relevant Issue
+- the PR is linked to the relevant Cloud Agent run and/or Origin work item
 - review is complete
 - CI passes when CI exists
 

@@ -85,15 +85,17 @@ This charter does not select frameworks, programming languages, cloud vendors, o
 
 ## 9. Development Workflow
 
-- **GitHub is the source of truth** for code, reviews, and project history.
-- Work is planned and tracked through **Issues**.
+- **Cursor Origin is the source of truth** for code, reviews, and project history.
+- **GitHub is a backup mirror only.** Do not open primary pull requests or new issues there.
+- Work is planned and tracked through **Cursor Cloud Agent runs** and **Origin pull requests**.
 - Implementation happens on **feature branches**.
 - Use branch naming conventions `feature/*`, `fix/*`, and `chore/*`.
-- Changes land through **Pull Requests**.
+- Changes land through **Pull Requests on Origin**.
 - The **main branch is protected**.
 - Prefer **small atomic changes** over large mixed commits.
 - Require **independent review** before merge.
-- Once CI exists, **CI must pass before merge**.
+- Once CI exists, **CI must pass before merge**. Canonical CI is attached to Origin, not to the GitHub backup.
+- Hosting and cutover steps live in `docs/processes/origin-github-hosting.md` and [ADR-0004](docs/decisions/ADR-0004-origin-source-of-truth.md).
 
 ## 10. AI Agent Operating Model
 
@@ -116,9 +118,9 @@ Operating rules:
 - Agents must **not edit unrelated files**.
 - Agents must **explain assumptions**.
 - **Implementation and review must be performed by separate contexts**.
-- **Cursor** is the primary workstation for interactive development.
-- **Codex** is used for isolated autonomous tasks.
-- **GitHub** remains the source of truth for collaboration and history.
+- **Cursor** is the primary workstation for interactive development and the canonical hosting surface (Origin + Cloud Agents).
+- **Codex** is used for isolated autonomous tasks against the Origin repository, not against a separate GitHub history.
+- **GitHub** is a backup mirror of Origin. It is not the writable source of truth.
 
 ## 11. Definition of Done
 
@@ -129,7 +131,7 @@ A task is complete only when all of the following are true:
 - tests pass
 - documentation is updated where relevant
 - migrations are checked when schema changes are involved
-- the Pull Request is linked to the relevant Issue
+- the Pull Request is linked to the relevant Cloud Agent run and/or tracked Origin work item
 - CI passes when CI exists
 
 ## 12. Decision-Making

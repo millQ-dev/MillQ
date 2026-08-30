@@ -1,7 +1,8 @@
 # Technology Stack Analysis — MillQ Initial Stack
 
-Related issue: [#6 — Select the initial technology stack](https://github.com/millQ-dev/MillQ/issues/6)  
+Related issue: [#6 — Select the initial technology stack](https://github.com/millQ-dev/MillQ/issues/6) (historical GitHub citation)  
 Related ADR: [`ADR-0001-initial-technology-stack.md`](../decisions/ADR-0001-initial-technology-stack.md)  
+Hosting: [ADR-0004](../decisions/ADR-0004-origin-source-of-truth.md) amends CI/hosting — Origin is canonical; GitHub is backup.  
 Date: 2026-07-25  
 Status: Analysis for review (not approved)
 
@@ -24,7 +25,7 @@ Drawn from `PROJECT_CHARTER.md`, Issue #6, and established repository convention
 - Idempotency for critical retried operations.
 - Audit trail for inventory and financial events.
 - Practical local development on macOS; Docker-based development environment.
-- GitHub Actions compatibility.
+- CI compatibility (later amended by ADR-0004: Origin-attached CI; GitHub Actions optional on backup).
 - Strong support for AI-assisted development in Cursor and Codex.
 - Small initial team.
 - No microservices and no Kubernetes for the initial architecture.
@@ -222,5 +223,5 @@ Before implementation scaffolding:
 
 1. Independent architecture review of this analysis and ADR-0001.
 2. Explicit product/owner approval of ADR-0001.
-3. Open follow-up Issues for deferred decisions that block coding (money model, auth, module layout).
-4. Confirm GitHub Actions can run TypeScript lint/test and PostgreSQL integration tests in CI when CI is introduced.
+3. Open follow-up Origin work items (Cloud Agent / PR) for deferred decisions that block coding (money model, auth, module layout).
+4. Confirm TypeScript lint/test and PostgreSQL integration tests can run against the Origin-hosted repository when CI is introduced (ADR-0004). GitHub Actions on the backup is optional.

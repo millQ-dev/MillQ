@@ -22,7 +22,7 @@ The stack must support:
 - idempotent critical retries
 - auditability
 - practical macOS + Docker local development
-- GitHub Actions compatibility
+- CI compatibility (amended by [ADR-0004](ADR-0004-origin-source-of-truth.md): canonical CI attaches to Origin; GitHub Actions on the backup is optional)
 - effective AI-assisted development in Cursor and Codex
 - a small initial team
 
@@ -124,7 +124,7 @@ No sales, inventory valuation, recipe write-off, or food-cost implementation may
 1. Independent review of the analysis and this ADR (separate context from the authoring agent).
 2. Explicit acceptance by decision owners (move status from **Proposed** to **Accepted**).
 3. Create follow-up Issues for deferred blockers (money model, auth, module layout).
-4. When CI is introduced, verify TypeScript checks and PostgreSQL-backed integration tests can run on GitHub Actions.
+4. When CI is introduced, verify TypeScript checks and PostgreSQL-backed integration tests can run against the Origin-hosted repository (see ADR-0004). GitHub Actions on the backup is optional.
 5. Re-check that first implementation PRs do not silently introduce rejected alternatives.
 
 ## Conditions for revisiting the decision

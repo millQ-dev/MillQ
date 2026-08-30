@@ -2,6 +2,8 @@
 
 Thank you for contributing. Keep changes focused, reviewable, and aligned with the current repository foundation.
 
+Canonical hosting is **Cursor Origin**. GitHub is a backup mirror. Clone, push, and open pull requests on Origin. See [`docs/processes/origin-github-hosting.md`](docs/processes/origin-github-hosting.md).
+
 ## Branch naming
 
 Use short, descriptive branch names with a type prefix:
@@ -44,14 +46,16 @@ chore: ignore local editor artifacts
 
 ## Pull request workflow
 
-1. Create a branch from the default branch (`main`).
+1. Create a branch from the default branch (`main`) on Origin.
 2. Make a focused set of changes.
-3. Open a pull request with:
+3. Open a pull request **on Origin** (not GitHub) with:
    - a clear summary of what changed and why
+   - the linked Cloud Agent run or other Origin work item
    - notes on risks, follow-ups, or unanswered questions
    - a short test plan (even for docs: what was checked)
 4. Keep pull requests small. Prefer multiple narrow PRs over one large PR.
 5. Do not mix unrelated refactors with feature work.
+6. After merge to Origin `main`, the GitHub backup is updated by pushing that SHA — never by merging a parallel GitHub PR.
 
 ## Code review expectations
 
