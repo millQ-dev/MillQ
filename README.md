@@ -24,12 +24,15 @@ The product consists of two deliberately separated capabilities:
 
 ## Local development
 
-Requirements: Node.js ≥ 20, pnpm 9, Docker.
+Requirements: Node.js ≥ 20, pnpm 9, PostgreSQL 16 (Docker Compose **or** local install).
 
 ```bash
 cp .env.example .env
+# Option A: Docker Compose
 docker compose -f infrastructure/docker-compose.yml up -d
-pnpm install
+# Option B: local PostgreSQL with DATABASE_URL matching .env.example
+
+pnpm install --frozen-lockfile
 pnpm --filter @millq/api run migrate
 pnpm dev
 ```
@@ -56,4 +59,4 @@ pnpm dev
 
 ## Status
 
-Foundation operational core block: runnable monorepo skeleton, shared domain math, fact contracts, architecture for Intelligence boundary and offline operation. Full POS and business workflows are not implemented yet.
+Foundation Operational Core (merge candidate after correction): Accepted ADR-0001…0003, **ADR-0006**, **ADR-0007**; typed operational facts; CostValue yield math; fact feed guardrail. Full POS and Block C are not started. Block B (ADR-0004/0005) remains Proposed.
