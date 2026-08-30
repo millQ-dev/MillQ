@@ -1,8 +1,12 @@
 # Domain Module Map
 
-- **Status:** Foundation reference (executable contracts align with this map)
+- **Status:** Foundation reference (provisional alignment with Block B proposal)
 - **Date:** 2026-08-19
-- **Aligns with:** Block B proposal (ADR-0004/0005 Proposed), Operational Core + Production Intelligence model
+- **Updated:** 2026-08-30
+- **Block B:** ADR-0004 / ADR-0005 remain **Proposed** (draft PR #12). This map **anticipates** that proposal; it does **not** accept Block B Product Owner decisions.
+- **Aligns with:** Operational Core + Production Intelligence model ([ADR-0006 Accepted](../decisions/ADR-0006-production-intelligence-boundary.md))
+
+Implementation must not hard-code unresolved Block B Product Owner decisions before that review is complete.
 
 Each row is an internal module boundary inside the **modular monolith** (one deployable application, strict internal ownership).
 
