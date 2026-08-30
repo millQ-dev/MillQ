@@ -138,7 +138,7 @@ Operating rules:
 - **Implementation and review must be performed by separate contexts**.
 - **Cursor** is the primary workstation for interactive development and the canonical hosting surface (Origin + Cloud Agents).
 - **Codex** is used for isolated autonomous tasks against the Origin repository, not against a separate GitHub history.
-- **GitHub** is a backup mirror of Origin. After cutover, only the backup automation identity may write to it, using an explicit GitHub ruleset bypass that no developer or implementation agent receives.
+- **GitHub** is a backup mirror of Origin. After cutover, only the backup automation identity may write to it. That identity is the sole bypass on the GitHub `main` branch ruleset (routine writes blocked) and on the GitHub tag ruleset for release/protected tags (create/update/delete restricted). No developer or implementation agent receives those bypasses.
 
 ## 11. Definition of Done
 

@@ -106,7 +106,7 @@ Do not let docs drift from implemented behavior.
 - **Do not push directly to Origin `main`.** Protection stays on. Autonomy is merge-when-ready after independent review and CI, not an unprotected default branch.
 - **Do not self-approve.** Independent review is mandatory and may be an authorized independent agent.
 - **Do arm merge-when-ready** on your own Level A/B Origin PR (`origin pr merge --auto`) after opening it. That is required for unattended merge and is **not** self-approval. Do not perform an immediate/unconditional merge, bypass Origin protections, or remove required reviews/checks. Level C: arm merge-when-ready only after the owner decision is recorded.
-- **Do not push to GitHub.** After cutover only the backup automation identity writes to GitHub, via an explicit GitHub ruleset bypass that implementation agents do not receive. Dual-write is forbidden.
+- **Do not push to GitHub.** After cutover only the backup automation identity writes to GitHub. It is the sole bypass on the GitHub `main` branch ruleset and on the release/protected-tag ruleset. Implementation agents receive neither bypass. Dual-write is forbidden.
 - Follow `docs/processes/origin-github-hosting.md`, `docs/processes/autonomous-development.md`, and ADR-0004. Do not use Origin’s Sync-from-GitHub mode (that keeps GitHub as source).
 
 ## 9. AI role separation

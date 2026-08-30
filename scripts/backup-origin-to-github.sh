@@ -3,9 +3,11 @@
 #
 # Intended identity: backup automation / service account only.
 # This identity must be the sole GitHub ruleset bypass/allowlisted actor
-# for fast-forwarding main and tags. Developers, Implementation Agents,
-# and Review Agents must not have that bypass and must not run this as
-# development dual-write.
+# on both:
+#   - branch ruleset: main (routine writes blocked)
+#   - tag ruleset: release/protected tags (create/update/delete restricted)
+# Developers, Implementation Agents, and Review Agents must not have
+# either bypass and must not run this as development dual-write.
 #
 # Never force-push GitHub main. Never use this path to land feature work.
 #

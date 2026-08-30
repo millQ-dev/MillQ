@@ -15,7 +15,7 @@ This repository currently contains only the project foundation. Application code
 - Start Cloud Agents against the Origin repository
 - Open PRs on Origin; Implementation Agent arms merge-when-ready; independent agent review; ruleset merges for Level A/B
 - Do not merge work on GitHub; do not dual-write
-- After cutover only the backup identity writes GitHub `main`, as the sole GitHub ruleset bypass
+- After cutover only the backup identity writes GitHub `main` and release/protected tags (sole bypass on both GitHub rulesets)
 
 Details: [`docs/processes/origin-github-hosting.md`](docs/processes/origin-github-hosting.md), [`docs/processes/autonomous-development.md`](docs/processes/autonomous-development.md), and [ADR-0004](docs/decisions/ADR-0004-origin-source-of-truth.md).
 

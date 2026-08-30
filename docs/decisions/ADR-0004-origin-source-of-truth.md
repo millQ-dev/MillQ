@@ -38,7 +38,7 @@ Adopt **Option B**.
 | Canonical git host | Cursor Origin (`https://origin.cursor.com/{owner}/MillQ.git`, browse at `https://cursor.com/codebase`) |
 | Backup git host | GitHub `https://github.com/millQ-dev/MillQ` — mirror of Origin `main` (and tags) only |
 | Auto-merge | Implementation Agent arms merge-when-ready on Level A/B PRs (`origin pr merge --auto`). That is not self-approval. Origin rulesets still require independent approval and CI. Immediate merge and Origin `main` bypass are forbidden. Level C: arm only after owner decision is recorded |
-| Who writes GitHub after cutover | Backup automation / service account only, as the sole GitHub ruleset bypass/allowlisted actor for Origin→GitHub replication |
+| Who writes GitHub after cutover | Backup automation / service account only. Sole bypass actor on two GitHub rulesets: branch `main` (routine writes blocked) and release/protected tags (create/update/delete restricted) |
 | Dual-write | Forbidden. Agents and developers must not push one commit to both remotes |
 | Pull requests | Open, review, and merge on Origin. Direct push to Origin `main` is forbidden |
 | Review | Independent review is mandatory and may be an authorized independent agent. Authors cannot approve their own change |
@@ -65,7 +65,7 @@ This ADR amends ADR-0001’s “GitHub Actions compatibility” requirement: CI 
 ### Negative / accepted costs
 
 - Origin is early beta. Namespace cannot be renamed during beta. Feature gaps vs GitHub (issues, Actions, public repos) are accepted.
-- After **Detach from GitHub**, Cursor stops syncing to GitHub. Backup must be a separate one-way job: Origin `main` → backup identity → GitHub `main` (and tags) after each merge. On GitHub, that identity is the only ruleset bypass for `main`; Origin `main` stays without implementer bypass.
+- After **Detach from GitHub**, Cursor stops syncing to GitHub. Backup must be a separate one-way job: Origin `main` → backup identity → GitHub `main`, plus Origin release/protected tags → GitHub, after each merge. On GitHub that identity is the only bypass on the `main` branch ruleset and on the tag ruleset. Origin `main` stays without implementer bypass.
 - Historical GitHub issue links stay valid as archive; they are not the live backlog.
 - This Cloud Agent run still clones GitHub. Hosting cutover, rulesets, CI apps, and backup credentials cannot be finished from a GitHub-only checkout and must not be reported as done.
 
@@ -77,7 +77,7 @@ This ADR amends ADR-0001’s “GitHub Actions compatibility” requirement: CI 
 4. **Lost work tracking** if new GitHub issues keep being filed and agents ignore them.
 5. **Backup drift** if Origin `main` is not pushed to GitHub after each merge, or if developers dual-write instead of using the backup identity.
 6. **Owner bottleneck** if independent review is misread as “human owner must click merge on every PR”, or if Implementation Agents are forbidden from arming merge-when-ready.
-7. **GitHub backup blocked** if `main` protection has no bypass for the backup identity, or **GitHub workplace restored** if that bypass is given to developers.
+7. **GitHub backup blocked** if the `main` or tag ruleset has no bypass for the backup identity, or **GitHub workplace restored** if that bypass is given to developers.
 
 ## Rejected alternatives
 
@@ -97,7 +97,7 @@ This ADR amends ADR-0001’s “GitHub Actions compatibility” requirement: CI 
 1. Independent review of this ADR, the charter revision, and the autonomous operating model (separate context from the authoring agent). This is Level C governance: owner decision is this instruction; the author must not merge it.
 2. After that merge, complete the numbered cutover checklist in `docs/processes/origin-github-hosting.md`, including Detach, a test Origin Cloud Agent, independent review, auto-merge, and backup SHA match.
 3. Confirm Origin Settings → General no longer lists GitHub as source.
-4. Confirm only the backup identity can write GitHub `main`, via an explicit GitHub ruleset bypass that other identities do not have.
+4. Confirm only the backup identity can write GitHub `main` and mutate release/protected tags, via explicit bypass on **both** GitHub rulesets.
 5. Disable GitHub as a workplace (no GitHub PR merges, no new GitHub issues as the queue).
 
 ## Conditions for revisiting the decision
