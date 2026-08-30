@@ -73,6 +73,6 @@ pnpm dev
 
 ## Status
 
-Foundation Operational Core (Origin merge candidate): Accepted ADR-0001…0003, **ADR-0006**, **ADR-0007**; typed operational facts; CostValue yield math; fact feed guardrail. Full POS and Block C are not started. Block B domain ADRs remain Proposed (separate from Origin source-of-truth ADR-0004).
+Foundation Operational Core (Origin merge candidate): Accepted ADR-0001…0003, **ADR-0006**, **ADR-0007**; typed operational facts; CostValue yield math; fact feed guardrail. Full POS and Block C are not started. Block B domain-boundary ADRs remain Proposed on a separate draft (note: Origin hosting ADR-0004 is Accepted and is a different decision).
 
 **CI:** Origin CI not attached yet. Current merge gates are local checks + independent Origin review + Origin ruleset. GitHub Actions workflow may exist as dormant/backup-compatible definition and is **not** a merge gate.

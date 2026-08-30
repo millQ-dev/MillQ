@@ -1,86 +1,59 @@
 # MillQ Current State
 
-**Checkpoint:** branch `feature/foundation-operational-core` @ `27ff2d9` (foundation operational core block)  
-**Base:** `main` @ `f568789` (Block A accepted)  
+**Checkpoint:** branch `feature/foundation-operational-core` (foundation correction in progress)
+**Base:** `main` @ `f568789` (Block A accepted)
 **Updated:** 2026-08-30
 
-## What exists now
-
-### Accepted architecture (unchanged authority)
+## Accepted decisions
 
 | ADR | Status | Topic |
 | --- | --- | --- |
 | ADR-0001 | Accepted | TypeScript monorepo, React, Node modular monolith, PostgreSQL |
 | ADR-0002 | Accepted | Money, quantity, units, rounding |
 | ADR-0003 | Accepted | Yield, preparations, moving-average costing |
-| ADR-0006 | **Proposed** | Production Intelligence boundary |
+| ADR-0006 | **Accepted** (2026-08-30) | Production Intelligence boundary |
+| ADR-0007 | **Accepted** (2026-08-30) | Concrete foundation scaffolding stack |
 
-Block B domain ADRs (0004/0005) remain on draft branch `chore/block-b-domain-boundaries` — **Proposed**, not merged.
+## Still Proposed / separate review
 
-### New documentation (this block)
+| Item | Status |
+| --- | --- |
+| ADR-0004 / ADR-0005 (Block B) | Proposed — draft PR #12 |
+| Block B questions B-01–B-18 | Open |
 
-- `docs/architecture/operational-core-and-intelligence.md` — two-layer product model
-- `docs/architecture/domain-module-map.md` — 17 module boundaries
-- `docs/architecture/historical-truth-model.md` — immutable facts vs mutable state
-- `docs/architecture/offline-foundation.md` — offline POS/sync design
-- `docs/architecture/implementation-scaffolding.md` — reversible tech choices for runnable skeleton
-- `docs/decisions/ADR-0006-production-intelligence-boundary.md` — Proposed
-- `docs/processes/chatgpt-review-packet-template.md` — safe handoff ritual for external ChatGPT review
-- `docs/processes/review-packets/2026-08-foundation-operational-core.md` — filled packet for this block
+Foundation domain map **provisionally aligns** with Block B proposal and does **not** accept unresolved Block B Product Owner decisions.
+
+## What exists now
+
+### Documentation
+
+- Operational Core + Intelligence model (ADR-0006 Accepted)
+- Domain module map (provisional vs Block B)
+- Historical truth model + operational fact feed guardrail
+- Offline foundation (idempotency conflict rule)
+- Foundation stack (ADR-0007)
+- ChatGPT review packet ritual
 
 ### Executable code
 
 | Package / app | Purpose |
 | --- | --- |
-| `@millq/domain` | Money, CostValue, Quantity, package conversion, yield normalization |
-| `@millq/contracts` | Operational fact envelopes, recommendation DTOs, in-memory idempotent store |
-| `@millq/api` | Fastify server, `/health`, env validation, SQL migrations runner |
-| `@millq/web` | React/Vite shell showing API health |
+| `@millq/domain` | Money, CostValue, Quantity, package conversion, yield via CostValue |
+| `@millq/contracts` | Typed operational facts, semantic idempotency, Intelligence DTOs |
+| `@millq/api` | Fastify server, `/health`, env validation, SQL migrations |
+| `@millq/web` | React/Vite shell |
 
 ### Infrastructure
 
-- `infrastructure/docker-compose.yml` — PostgreSQL 16 for local dev
-- `apps/api/migrations/001_foundation.sql` — `operational_facts`, `recommendations` tables (schema only)
+- PostgreSQL local (Docker Compose file and/or local Homebrew Postgres)
+- `apps/api/migrations/001_foundation.sql` — `operational_fact_feed` + `recommendations` (feed ≠ module source of truth)
+- GitHub Actions CI: typecheck, test, build, migrate smoke, `/health`
 
-## What works locally
+## Explicitly not started
 
-```bash
-pnpm install
-pnpm test          # domain + contracts unit tests
-pnpm build         # all packages
-docker compose -f infrastructure/docker-compose.yml up -d
-pnpm --filter @millq/api run migrate
-pnpm dev           # API :3000 + Web :5173
-```
+- Block C (GoodsReceived persistence / inventory source tables)
+- Block B acceptance / merge of ADR-0004/0005
 
-Health check: `GET http://localhost:3000/health` (database `up` when Postgres running).
+## Next recommended block (after merge of this foundation)
 
-## Open Product Owner decisions
-
-- Accept ADR-0006 (Production Intelligence boundary)
-- Block B module boundaries (ADR-0004/0005 on draft PR #12)
-- Exact ORM, auth, offline sync protocol (ADR-0001 deferred)
-- Vietnam fiscal/offline fiscal behavior (jurisdiction research)
-- Block B questions B-01–B-18 from draft branch
-
-## Next recommended block
-
-**Block C — Operational persistence and first commands:**
-
-1. Persist operational facts to PostgreSQL with idempotency
-2. Identity & Organization minimal model (company, location, actor)
-3. First vertical slice: GoodsReceived → inventory movement fact
-4. Recipe/preparation version activation facts wired to domain yield math
-5. Accept or reconcile Block B ADRs into module package structure
-
-## Restore reference
-
-After merge, checkpoint tag recommended: `foundation-operational-core-v1`.
-
-Until merge, checkout:
-
-```bash
-git fetch origin
-git checkout feature/foundation-operational-core
-pnpm install && pnpm test && pnpm build
-```
+**Block C — Operational persistence and first commands** (only after Product Owner merge of this foundation PR).
