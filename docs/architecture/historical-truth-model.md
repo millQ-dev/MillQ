@@ -80,12 +80,15 @@ Historical queries use context stored on the fact, not today’s structure graph
 
 Per module, within PostgreSQL:
 
-1. **Fact tables** — append-only inserts for posted business facts
+1. **Fact tables** — append-only inserts for posted business facts (module-owned source of truth)
 2. **Version tables** — new row per version with validity interval
 3. **State tables** — current balance/status updated in same transaction as fact insert
 4. **Revision tables** — derived cost/status before/after linked to run ID
+5. **Optional fact feed** — `operational_fact_feed` may mirror published facts for analytics/integration; it is **not** a replacement for module-owned source tables (see `operational-fact-feed.md`)
 
 Cross-module integrity: single database transaction where a command spans modules; each module writes only its tables.
+
+Foundation migration `001_foundation.sql` creates only the feed + recommendations schema placeholders. Block C owns real Purchasing/Inventory/Orders source tables.
 
 ## 8. Production Intelligence consumption
 

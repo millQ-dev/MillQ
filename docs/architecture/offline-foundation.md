@@ -42,7 +42,10 @@ Cannot guarantee without sync:
 
 - Client generates UUID v7 (time-sortable) for orders, lines, payments, movements
 - Idempotency key = `{terminalId}:{clientCommandId}` for every mutating command
-- Server deduplicates on idempotency key — safe retry after reconnect
+- Server deduplicates on idempotency key **plus semantic fingerprint**:
+  - SAME key + SAME semantic operation → safe duplicate (return existing fact)
+  - SAME key + DIFFERENT semantic operation → `IDEMPOTENCY_CONFLICT` (reject)
+- Semantic fingerprint includes business-significant content (`factType`, `occurredAt`, business position, operational context, payload) and excludes server-generated metadata that may differ on retry (`factId`, `recordedAt`)
 
 ## 5. Synchronization boundary
 
@@ -74,7 +77,8 @@ Each queued command carries:
 
 | Class | Example | Handling |
 | --- | --- | --- |
-| **Idempotent retry** | Same command uploaded twice | Server returns original result |
+| **Idempotent retry** | Same command uploaded twice (same semantic fingerprint) | Server returns original result |
+| **Idempotency conflict** | Same idempotency key reused for a different operation | Reject with `IDEMPOTENCY_CONFLICT` |
 | **Version stale** | Menu price changed since snapshot | Policy: reject line or accept with snapshot flag (Product Owner) |
 | **Stock unavailable** | Sale exceeds known stock | Allow negative stock per ADR-0003; label cost estimate |
 | **Order merge** | Two devices edit same order | Exclusive order lock preferred; split orders if unavoidable (deferred) |
