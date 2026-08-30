@@ -25,7 +25,9 @@ Before making changes, every agent must:
 - identify assumptions, dependencies, and risks
 - stop and escalate when business logic is unclear
 
-Do not start implementation on ambiguous product rules.
+Do not start implementation on ambiguous product rules. If the change is Level C and no owner decision exists, stop.
+
+Classify the change as Level A, B, or C before editing (see `docs/processes/autonomous-development.md`). If unsure, use the stricter class. Unsure B vs C means C.
 
 ## 3. Scope discipline
 
@@ -93,33 +95,46 @@ Do not let docs drift from implemented behavior.
 
 ## 8. Git and Pull Request rules
 
-- GitHub is the source of truth.
-- Work must be linked to an Issue.
+- Cursor Origin is the only source of truth after cutover. GitHub is a backup mirror only.
+- Start Cloud Agents against the Origin repository, not GitHub.
+- Create branches from Origin `main`. Open pull requests on Origin only.
+- Work must be linked to a Cloud Agent run and/or an Origin pull request. Do not open new GitHub issues for the same work.
+- Every PR must declare autonomy level **A**, **B**, or **C**.
 - Allowed branch prefixes are `feature/`, `fix/`, and `chore/`.
 - Commits must be atomic and use Conventional Commit style.
-- Pull Requests must include summary, scope, testing, risks, and linked Issue.
-- Do not push directly to `main`.
-- Do not merge your own work without the required review process.
+- Pull Requests must include summary, scope, testing, risks, linked work item, and autonomy level.
+- **Do not push directly to Origin `main`.** Protection stays on. Autonomy is merge-when-ready after independent review and CI, not an unprotected default branch.
+- **Do not self-approve.** Independent review is mandatory and may be an authorized independent agent.
+- **Do arm merge-when-ready** on your own Level A/B Origin PR (`origin pr merge --auto`) after opening it. That is required for unattended merge and is **not** self-approval. Do not perform an immediate/unconditional merge, bypass Origin protections, or remove required reviews/checks. Level C: arm merge-when-ready only after the owner decision is recorded.
+- **Do not push to GitHub.** After cutover only the backup automation identity writes to GitHub. It is the sole bypass on the GitHub `main` branch ruleset and on the release/protected-tag ruleset. Implementation agents receive neither bypass. Dual-write is forbidden.
+- Follow `docs/processes/origin-github-hosting.md`, `docs/processes/autonomous-development.md`, and ADR-0004. Do not use Origin’s Sync-from-GitHub mode (that keeps GitHub as source).
 
 ## 9. AI role separation
 
-- Cursor is the primary interactive workstation.
-- Codex is for isolated autonomous tasks.
+- Cursor is the primary interactive workstation and canonical Origin + Cloud Agent surface.
+- Codex is for isolated autonomous tasks against Origin, not a second GitHub history.
+- Implementation Agent, Review Agent, and Fix Agent are defined in `docs/processes/autonomous-development.md`.
 - Implementation and review for the same change must use separate contexts.
-- An agent must not approve its own unreviewed implementation.
-- Reviewers should inspect correctness, scope, tests, security, and documentation.
+- An agent must not approve its own implementation.
+- Reviewers inspect correctness, scope, tests, security, documentation, invariants, and whether the declared level is honest.
+- Review result is `APPROVE` or `REQUEST CHANGES`. The Review Agent does not arm merge-when-ready. Human owner review is not required on Level A or B PRs.
+- Level C needs an owner decision on the proposal/ADR. After that, the Implementation Agent arms merge-when-ready; the owner does not have to merge.
 
 ## 10. Definition of Done
 
 A change is complete only when:
 
 - acceptance criteria are met
+- autonomy level is declared and correct
+- Level C has a recorded owner decision
 - relevant tests pass
 - documentation is updated
 - migrations are reviewed when applicable
-- the PR is linked to the relevant Issue
-- review is complete
+- the PR is linked to the relevant Cloud Agent run and/or Origin work item
+- independent review is `APPROVE` from a context that did not author the change
+- unresolved review threads are empty
 - CI passes when CI exists
+- Level A/B PRs have merge-when-ready armed by the Implementation Agent (`origin pr merge --auto` once Origin requirements are configured)
 
 ## 11. Required completion report
 
@@ -130,3 +145,6 @@ At the end of every task, the agent must report:
 - assumptions
 - tests performed
 - known limitations or follow-up work
+- autonomy level (A/B/C)
+- whether independent review was requested (implementation agents must not self-approve)
+- whether merge-when-ready was armed (required for Level A/B; Level C only after owner decision)

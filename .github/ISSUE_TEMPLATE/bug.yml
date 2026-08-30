@@ -7,6 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
+        GitHub is a backup mirror. Do not file new work here. Canonical hosting is Cursor Origin.
         Use this template for defects only.
         Include enough detail for reproduction and impact assessment. Follow `PROJECT_CHARTER.md` and `AGENTS.md`.
   - type: textarea

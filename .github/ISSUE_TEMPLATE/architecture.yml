@@ -7,6 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
+        GitHub is a backup mirror. Do not file new work here. Canonical hosting is Cursor Origin.
         Use this template for architectural problems and decisions.
         Significant decisions must be recorded as ADRs under `docs/decisions/` once accepted.
         Do not select a technology stack unless the decision is explicitly in scope and approved.

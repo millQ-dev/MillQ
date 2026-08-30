@@ -1,6 +1,11 @@
-## Linked Issue
-<!-- Required. Add the relevant Issue URL or number. -->
-- Issue: 
+## Linked work item
+<!-- Required. Cloud Agent run URL and/or Origin pull request / work item. Do not open a new GitHub issue for the same work. -->
+- Work item: 
+
+## Autonomy level
+<!-- Required. A = autonomous, B = guarded autonomous, C = owner decision required. If unsure, use the stricter class. -->
+- Level: 
+- Owner decision (Level C only): 
 
 ## Summary
 <!-- What changed and why. -->
@@ -44,5 +49,9 @@
 - [ ] No secrets committed
 - [ ] Backward compatibility considered
 - [ ] Inventory and financial behavior reviewed or confirmed not applicable
-- [ ] PR linked to the relevant Issue
+- [ ] Autonomy level declared and justified
+- [ ] Independent review requested (author will not self-approve)
+- [ ] Merge-when-ready armed by Implementation Agent (Level A/B; Level C only after owner decision)
+- [ ] PR linked to the relevant Cloud Agent run and/or Origin work item
 - [ ] CI passes or CI is not yet available
+- [ ] Author did not merge immediately or bypass Origin `main`

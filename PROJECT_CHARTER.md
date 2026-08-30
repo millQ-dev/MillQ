@@ -85,60 +85,82 @@ This charter does not select frameworks, programming languages, cloud vendors, o
 
 ## 9. Development Workflow
 
-- **GitHub is the source of truth** for code, reviews, and project history.
-- Work is planned and tracked through **Issues**.
-- Implementation happens on **feature branches**.
+- **Cursor Origin is the only source of truth** for code, reviews, and project history after cutover.
+- **GitHub is a backup mirror only.** After cutover, only backup automation may write to GitHub. Do not open primary pull requests or new issues there. Dual-write is forbidden.
+- Work is planned and tracked through **Cursor Cloud Agent runs** and **Origin pull requests**.
+- Implementation happens on **feature branches** from Origin `main`.
 - Use branch naming conventions `feature/*`, `fix/*`, and `chore/*`.
-- Changes land through **Pull Requests**.
-- The **main branch is protected**.
+- Changes land through **Pull Requests on Origin**. Direct push to `main` is forbidden.
+- The **main branch is protected** by rulesets. Agent freedom comes from automation and review, not from removing protection.
 - Prefer **small atomic changes** over large mixed commits.
-- Require **independent review** before merge.
-- Once CI exists, **CI must pass before merge**.
+- **Independent review is mandatory**, but it may be performed by an authorized independent agent. The author must not approve their own change. Implementation and review must use separate contexts.
+- The **Implementation Agent arms merge-when-ready** on Level A/B Origin PRs (`origin pr merge --auto`). That is not self-approval. Origin rulesets must still require independent approval and required CI before the merge. Immediate/unconditional merge and bypass of Origin `main` are forbidden.
+- Once CI exists, **CI must pass before merge**. Canonical CI is attached to Origin, not to the GitHub backup.
+- **Level A and Level B** pull requests merge unattended when review, CI, and ruleset requirements are met. No human merge click. See [`docs/processes/autonomous-development.md`](docs/processes/autonomous-development.md).
+- Hosting and cutover steps live in [`docs/processes/origin-github-hosting.md`](docs/processes/origin-github-hosting.md) and [ADR-0004](docs/decisions/ADR-0004-origin-source-of-truth.md).
+
+### Autonomy levels
+
+| Level | Human owner on each PR? | Review | Merge |
+| --- | --- | --- | --- |
+| **A — Autonomous** | No | Independent Review Agent | Implementation Agent arms merge-when-ready; ruleset merges after review+CI |
+| **B — Guarded Autonomous** | No | Independent specialist Review Agent (invariants required) | Implementation Agent arms merge-when-ready; ruleset merges after review+CI |
+| **C — Owner decision** | Yes, on the **decision** (ADR/proposal), not necessarily on merge | Independent Review Agent after owner decision | Implementation Agent may arm merge-when-ready only after the owner decision is recorded; ruleset merges after review+CI |
+
+Level A: ordinary bug fixes, UI inside an approved design, tests, documentation, safe refactors, small implementation changes that do not change public contracts or architecture.
+
+Level B: schema, migrations, API contracts, domain logic, inventory, financial calculations, offline/sync, auth/permissions implementation, cross-module work, production infrastructure.
+
+Level C: architecture, module boundaries, historical-truth/event model, money model, inventory accounting model, security architecture, destructive migrations, new vendor/platform, unapproved product behaviour, governance, ADR-level decisions.
+
+If classification is unclear, use the stricter level. Unclear B vs C is C: stop and request an owner decision. After an owner accepts a Level C decision, implementation proceeds autonomously.
 
 ## 10. AI Agent Operating Model
 
-MillQ uses specialized AI-agent roles. A single person or tool may support multiple roles across the project, but implementation and review for the same change must use separate contexts.
+MillQ uses specialized AI-agent roles. A single person or tool may support multiple roles across the project, but **implementation and review for the same change must use separate contexts**. Independent review may be an authorized agent. It is not required to be a human owner on every PR.
+
+Minimum delivery roles:
 
 | Role | Responsibility |
 | --- | --- |
-| Product Analyst | Clarify requirements, acceptance criteria, and scope boundaries |
-| System Architect | Define structure, boundaries, trade-offs, and ADRs |
-| Implementation Agent | Implement approved changes inside the stated scope |
-| Autonomous Developer | Execute isolated, well-scoped tasks with minimal supervision |
-| Reviewer | Critically review correctness, scope, risk, and convention adherence |
-| QA Agent | Validate acceptance criteria, regressions, and test coverage |
-| Security Agent | Assess auth, data integrity, secrets handling, and abuse risks |
-| Documentation Agent | Keep charter-aligned docs accurate and current |
+| Implementation Agent | Classify autonomy level, implement agreed scope on an Origin branch, test, document, open Origin PR, **arm merge-when-ready** on Level A/B (Level C only after owner decision). Must not self-approve, merge immediately, bypass Origin protections, or push to GitHub. |
+| Review Agent | Independent context. Checks correctness, scope, regressions, architecture, tests, migrations, security, money/inventory invariants, compatibility, docs, and declared level. Returns `APPROVE` or `REQUEST CHANGES`. |
+| Fix Agent | Same implementation identity after `REQUEST CHANGES`: fix threads, re-test, push, re-arm merge-when-ready. Must not self-approve or merge immediately. |
+
+Specialist roles (Product Analyst, System Architect, QA, Security, Documentation, and others) may act as the Review Agent when the change is Level B in their domain.
 
 Operating rules:
 
 - Agents must **not invent business logic**.
 - Agents must **not edit unrelated files**.
 - Agents must **explain assumptions**.
+- Agents must **classify each change as Level A, B, or C** and stop on Level C until an owner decision exists.
 - **Implementation and review must be performed by separate contexts**.
-- **Cursor** is the primary workstation for interactive development.
-- **Codex** is used for isolated autonomous tasks.
-- **GitHub** remains the source of truth for collaboration and history.
+- **Cursor** is the primary workstation for interactive development and the canonical hosting surface (Origin + Cloud Agents).
+- **Codex** is used for isolated autonomous tasks against the Origin repository, not against a separate GitHub history.
+- **GitHub** is a backup mirror of Origin. After cutover, only the backup automation identity may write to it. That identity is the sole bypass on the GitHub `main` branch ruleset (routine writes blocked) and on the GitHub tag ruleset for release/protected tags (create/update/delete restricted). No developer or implementation agent receives those bypasses.
 
 ## 11. Definition of Done
 
 A task is complete only when all of the following are true:
 
 - acceptance criteria are met
-- implementation is reviewed
+- implementation has independent review (`APPROVE` from a context that did not author the change)
 - tests pass
 - documentation is updated where relevant
 - migrations are checked when schema changes are involved
-- the Pull Request is linked to the relevant Issue
+- the Pull Request is linked to the relevant Cloud Agent run and/or tracked Origin work item and declares autonomy level A, B, or C
 - CI passes when CI exists
+- Level A/B PRs have merge-when-ready armed by the Implementation Agent; Level C has a recorded owner decision before merge-when-ready
 
 ## 12. Decision-Making
 
-- **Product decisions** belong to product ownership.
-- **Architecture decisions** require an ADR.
-- **Uncertain business logic** must be escalated rather than invented.
-- **Irreversible decisions** require explicit approval.
-- **Reversible decisions** should prefer speed and simplicity.
+- **Product decisions** belong to product ownership (Level C until decided).
+- **Architecture decisions** require an ADR and owner acceptance (Level C).
+- **Uncertain business logic** must be escalated rather than invented (Level C).
+- **Irreversible decisions** require explicit owner approval.
+- **Reversible decisions** should prefer speed and simplicity (Level A or B when they fit those classes).
+- After an owner accepts a Level C decision, agents implement, arm merge-when-ready, get independent review, and let the ruleset merge. The owner does not have to click merge.
 
 ## 13. Documentation Hierarchy
 
@@ -157,4 +179,4 @@ Lower-level documents must not contradict this charter. If they conflict, the ch
 
 ## 14. Change Control
 
-Changes to this charter must be made through a dedicated Pull Request with a clear rationale. Editorial corrections may be small; changes to mission, scope, principles, workflow, or decision rights are material and require explicit review before merge.
+Changes to this charter must be made through a dedicated Pull Request with a clear rationale. Editorial corrections may be small; changes to mission, scope, principles, workflow, autonomy levels, or decision rights are **Level C** and require an owner decision plus independent review before merge. Independent review may be an authorized agent. The author must not approve the charter change.
