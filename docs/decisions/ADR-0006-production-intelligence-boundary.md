@@ -1,7 +1,8 @@
 # ADR-0006: Production Intelligence Boundary
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-08-19
+- **Accepted:** 2026-08-30
 - **Decision owners:** Product Owner and System Architect
 - **Related:** [`operational-core-and-intelligence.md`](../architecture/operational-core-and-intelligence.md), [`domain-module-map.md`](../architecture/domain-module-map.md)
 
@@ -19,7 +20,7 @@ Without an explicit boundary, analytics code could mutate operational data or du
 4. No fake AI or external LLM dependency in foundation phase.
 5. Recommendations that cause operational change require human approval path.
 
-## Proposed decision
+## Decision
 
 ### Layer separation
 
@@ -30,7 +31,31 @@ Without an explicit boundary, analytics code could mutate operational data or du
 | **Analytics** | Read models and aggregates only | Operational facts, cost revisions |
 | **Production Intelligence** | Recommendations, detector runs, forecast artifacts only | Analytics projections, operational facts (read-only) |
 
+**Operational Core is the only source of operational truth.**
+
+Production Intelligence may:
+
+- read facts;
+- calculate derived data;
+- detect patterns;
+- forecast;
+- produce recommendations;
+- explain evidence;
+- track human decisions.
+
+Production Intelligence **must not** silently mutate:
+
+- purchases;
+- inventory;
+- sales;
+- payments;
+- recipe history;
+- cost history;
+- audit history.
+
 Production Intelligence **must not** INSERT/UPDATE/DELETE rows in Inventory, Orders, Payments, Purchasing, or Audit source tables.
+
+Any recommendation that causes an operational change must cross an explicit **Operational Core command** boundary.
 
 ### Recommendation lifecycle
 
@@ -110,6 +135,10 @@ Optional: Operational Core command (explicit)
 1. Code review: Intelligence package has no imports that mutate Operational Core repositories.
 2. Contract tests: recommendation acceptance produces command DTO, not direct SQL to inventory tables.
 3. Product Owner accepts boundary before Intelligence features ship.
+
+## Acceptance
+
+Accepted by Product Owner on **2026-08-30** as part of the foundation correction block. Core rule confirmed: Operational Core alone owns operational truth; Intelligence recommendations that change operations must pass through an explicit Operational Core command.
 
 ## Conditions for revisiting
 
