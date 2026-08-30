@@ -1,8 +1,9 @@
 # MillQ Current State
 
-**Checkpoint:** branch `feature/foundation-operational-core` (foundation correction in progress)
-**Base:** `main` @ `f568789` (Block A accepted)
-**Updated:** 2026-08-30
+**Checkpoint:** branch `feature/foundation-operational-core` @ `d36caed`  
+**Base:** `main` @ `f568789` (Block A accepted)  
+**Updated:** 2026-08-30  
+**Issue:** https://github.com/millQ-dev/MillQ/issues/14
 
 ## Accepted decisions
 
