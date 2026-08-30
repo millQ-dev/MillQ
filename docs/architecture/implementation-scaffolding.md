@@ -1,34 +1,38 @@
-# Implementation Scaffolding (Foundation Block)
+# Foundation Implementation Stack
 
-This document records **reversible scaffolding choices** made to produce a runnable local foundation. They do **not** override Accepted ADR-0001 deferred items unless the Product Owner accepts them in a future ADR.
+- **Status:** Accepted concrete choices (ADR-0007)
+- **Related:** [ADR-0001](../decisions/ADR-0001-initial-technology-stack.md), [ADR-0007](../decisions/ADR-0007-foundation-scaffolding-stack.md)
 
-## What was scaffolded
+This document describes the **Product Owner-approved** foundation stack for the current stage. It is not an invitation to add further frameworks without justification.
 
-| Area | Choice | Notes |
-| --- | --- | --- |
-| Package manager | pnpm workspaces | Matches common TypeScript monorepo practice |
-| Domain math | `decimal.js` via `@millq/domain` | Implements ADR-0002 invariants |
-| Contracts validation | Zod | Shared DTO/fact schemas in `@millq/contracts` |
-| HTTP server | Fastify 5 | Minimal API with health endpoint |
-| Web shell | Vite + React 19 | Dev proxy to API |
-| Database | PostgreSQL 16 (Docker Compose) | Local dev only |
-| Migrations | Plain SQL + `schema_migrations` table | Simple runner in `apps/api`; ORM deferred |
-| Logging | Pino (via Fastify) | Structured JSON logs |
-| Tests | Vitest | Domain and contracts packages |
+## Approved stack (ADR-0007)
 
-## Deferred (still require Product Owner / ADR)
+| Area | Choice |
+| --- | --- |
+| Package manager | pnpm workspaces |
+| Domain math | `decimal.js` via `@millq/domain` (ADR-0002) |
+| Contracts validation | Zod via `@millq/contracts` |
+| HTTP server | Fastify |
+| Web shell | Vite + React |
+| Database | PostgreSQL |
+| Migrations (foundation) | Plain SQL + `schema_migrations` table |
+| Logging | Structured JSON via Fastify/Pino |
+| Tests | Vitest |
 
-- React meta-framework (Next.js vs plain SPA routing)
-- ORM / query layer (Drizzle, Kysely, Prisma, etc.)
-- Auth provider and session model
-- Offline sync protocol and client storage
+## Still deferred
+
+- ORM / query layer
+- Auth / session implementation
+- Offline client storage and sync protocol
 - Production deployment topology
+- React routing / meta-framework
 
 ## Local run
 
 ```bash
 docker compose -f infrastructure/docker-compose.yml up -d
-pnpm install
+# or any local PostgreSQL matching DATABASE_URL
+pnpm install --frozen-lockfile
 pnpm --filter @millq/api run migrate
 pnpm dev
 ```
@@ -40,7 +44,7 @@ pnpm dev
 
 ```text
 packages/domain/     — Money, Quantity, conversion, yield (ADR-0002/0003)
-packages/contracts/  — Operational fact envelopes, Intelligence recommendation DTOs
-apps/api/            — Operational Core HTTP entry (health, future commands)
+packages/contracts/  — Typed operational facts and Intelligence DTOs
+apps/api/            — Operational Core HTTP entry (health, migrations)
 apps/web/            — Client shell
 ```

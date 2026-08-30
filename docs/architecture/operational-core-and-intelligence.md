@@ -2,7 +2,7 @@
 
 - **Status:** Accepted architectural direction (documentation reconciliation)
 - **Date:** 2026-08-19
-- **Related:** `PROJECT_CHARTER.md`, ADR-0001, ADR-0002, ADR-0003, [ADR-0006](../decisions/ADR-0006-production-intelligence-boundary.md) (Proposed)
+- **Related:** `PROJECT_CHARTER.md`, ADR-0001, ADR-0002, ADR-0003, [ADR-0006](../decisions/ADR-0006-production-intelligence-boundary.md) (Accepted), [ADR-0007](../decisions/ADR-0007-foundation-scaffolding-stack.md) (Accepted)
 
 ## 1. Purpose
 
@@ -11,7 +11,7 @@ MillQ is not only a POS and accounting system. It has two connected but delibera
 1. **MillQ Operational Core** — the authoritative operational system.
 2. **MillQ Production Intelligence** — recommendations and business intelligence built on reliable operational facts.
 
-This document reconciles that product direction with the existing accepted architecture. It does not replace Block B module boundaries (ADR-0004/0005 remain Proposed until accepted).
+This document reconciles that product direction with the existing accepted architecture. It does not replace Block B module boundaries (ADR-0004/0005 remain **Proposed** until accepted; foundation only provisionally aligns with that proposal).
 
 ## 2. Operational Core
 
