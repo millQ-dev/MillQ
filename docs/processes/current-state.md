@@ -1,8 +1,8 @@
 # MillQ Current State
 
-**Checkpoint:** branch `feature/foundation-operational-core` @ `afe3111` (foundation operational core block)  
+**Checkpoint:** branch `feature/foundation-operational-core` @ `27ff2d9` (foundation operational core block)  
 **Base:** `main` @ `f568789` (Block A accepted)  
-**Updated:** 2026-08-19
+**Updated:** 2026-08-30
 
 ## What exists now
 
@@ -25,6 +25,8 @@ Block B domain ADRs (0004/0005) remain on draft branch `chore/block-b-domain-bou
 - `docs/architecture/offline-foundation.md` — offline POS/sync design
 - `docs/architecture/implementation-scaffolding.md` — reversible tech choices for runnable skeleton
 - `docs/decisions/ADR-0006-production-intelligence-boundary.md` — Proposed
+- `docs/processes/chatgpt-review-packet-template.md` — safe handoff ritual for external ChatGPT review
+- `docs/processes/review-packets/2026-08-foundation-operational-core.md` — filled packet for this block
 
 ### Executable code
 
