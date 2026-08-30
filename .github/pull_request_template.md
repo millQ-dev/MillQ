@@ -51,6 +51,7 @@
 - [ ] Inventory and financial behavior reviewed or confirmed not applicable
 - [ ] Autonomy level declared and justified
 - [ ] Independent review requested (author will not self-approve)
+- [ ] Merge-when-ready armed by Implementation Agent (Level A/B; Level C only after owner decision)
 - [ ] PR linked to the relevant Cloud Agent run and/or Origin work item
 - [ ] CI passes or CI is not yet available
-- [ ] Auto-merge eligible (Level A/B) or Level C owner decision recorded
+- [ ] Author did not merge immediately or bypass Origin `main`

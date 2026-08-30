@@ -4,7 +4,7 @@ Thank you for contributing. Keep changes focused, reviewable, and aligned with t
 
 Canonical hosting is **Cursor Origin**. GitHub is a backup mirror. Clone, push, and open pull requests on Origin. Do not push to GitHub. See [`docs/processes/origin-github-hosting.md`](docs/processes/origin-github-hosting.md) and [`docs/processes/autonomous-development.md`](docs/processes/autonomous-development.md).
 
-Owners are not a required reviewer on every PR. Independent review may be an authorized agent. Direct push to `main` is forbidden. Level A and B PRs auto-merge when review and CI requirements pass.
+Owners are not a required reviewer on every PR. Independent review may be an authorized agent. Direct push to Origin `main` is forbidden. The Implementation Agent arms merge-when-ready on Level A/B PRs; Origin rulesets merge after independent approval and CI. That is not self-approval.
 
 ## Branch naming
 
@@ -59,8 +59,8 @@ chore: ignore local editor artifacts
 4. Keep pull requests small. Prefer multiple narrow PRs over one large PR.
 5. Do not mix unrelated refactors with feature work.
 6. Request an **independent** Review Agent. The implementation agent must not approve the PR.
-7. After `APPROVE`, CI (when it exists), and empty review threads, Level A/B PRs use auto-merge (`origin pr merge --auto`). Do not push to `main`.
-8. GitHub backup is updated by backup automation after Origin merge — never by a parallel GitHub PR or dual-write from the implementer.
+7. On Level A/B, the implementation agent **arms merge-when-ready** when opening the PR (`origin pr merge --auto`). Do not merge immediately. Do not push to Origin `main`. Level C: arm merge-when-ready only after the owner decision is recorded.
+8. GitHub backup is updated by backup automation after Origin merge, using the backup identity’s GitHub ruleset bypass — never by a parallel GitHub PR or dual-write from the implementer.
 
 ## Code review expectations
 

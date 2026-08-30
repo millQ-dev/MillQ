@@ -57,14 +57,29 @@ Target path after every Origin merge:
 
 Also push tags so GitHub reflects Origin tags.
 
-Rules:
+### Who may write GitHub `main`
 
-- Backup must update **after each merge to Origin `main`**, not on a weekly batch.
-- GitHub `main` must show the **same SHA** as Origin `main`.
-- **Only the backup automation/service account should write to the GitHub backup after cutover.**
-- Implementation agents, Review Agents, and humans doing feature work must not push to GitHub.
+After cutover:
 
-Intended job body (not wired, not verified in this environment): [`scripts/backup-origin-to-github.sh`](../../scripts/backup-origin-to-github.sh).
+- The **backup automation/service identity is the only identity authorized** to perform the direct backup write to GitHub `main` and tags.
+- Implementation agents, Review Agents, and normal human development identities **must not** receive this right and **must not** push to GitHub.
+- Dual-write from a working clone is forbidden.
+
+### Coexistence with GitHub write restrictions
+
+GitHub `main` should reject routine developer/agent writes (no GitHub PRs as the workplace, no direct pushes from people or implementation agents). That protection would also reject the backup job unless the backup identity is an **explicit exception**.
+
+Required GitHub configuration (owner/platform; not Origin `main`):
+
+1. Apply a GitHub ruleset or branch protection on `main` that blocks routine pushes and merges.
+2. Add the backup automation/service identity as the **only** permitted/bypass actor for that GitHub ruleset, solely so it can fast-forward `main` and tags from Origin.
+3. Do **not** grant that bypass to implementation agents, review agents, or human developers.
+4. This exception exists **only** for deterministic Origin→GitHub backup replication. It must never be used for development, hotfixes, or GitHub PRs.
+5. **Do not weaken Origin `main` protections.** Origin remains PR-only with independent review and no implementer bypass.
+
+A local `git remote set-url --push github no_push` on developer clones is an extra guard. It does not replace the GitHub ruleset.
+
+Intended job body (not wired, not verified in this environment): [`scripts/backup-origin-to-github.sh`](../../scripts/backup-origin-to-github.sh). Fast-forward only; no force-push of GitHub `main`.
 
 How to trigger it is an owner/platform choice once Origin is detached, for example:
 
@@ -89,12 +104,12 @@ Do not mark cutover complete until every step below has actually been done.
 5. In Cursor Origin **Settings → General → Danger Zone**, run **Detach from GitHub** if Origin is still a GitHub-sourced mirror. After Detach, Origin is the only canonical repository. Cursor will no longer pass pushes through to GitHub.
 6. From this point, treat Origin as the only writable host.
 7. Start a **test Cloud Agent against the Origin MillQ repo** (not GitHub).
-8. Have that agent create a test branch and an Origin pull request (Level A, trivial, disposable).
-9. Run an **independent** Review Agent on that PR (`APPROVE` or `REQUEST CHANGES` from a separate context).
+8. Have that agent create a test branch and an Origin pull request (Level A, trivial, disposable) and **arm merge-when-ready** (`origin pr merge --auto`).
+9. Run an **independent** Review Agent on that PR (`APPROVE` or `REQUEST CHANGES` from a separate context). The Review Agent must not be asked to merge.
 10. Confirm CI/checks behaviour: either required checks run, or record that CI is not attached yet and is therefore not a merge gate.
-11. Confirm auto-merge: `origin pr merge --auto` (or Origin merge-when-ready) after requirements are met. Direct push to `main` must still be rejected.
+11. Confirm unattended merge: after independent `APPROVE` and required checks, Origin merges without a human click. Direct push to Origin `main` must still be rejected. Immediate/unconditional merge by the Implementation Agent must still be rejected.
 12. Confirm the test change is on Origin `main`.
-13. Run backup: Origin `main` → GitHub `main` (and tags) via the **backup identity only**.
+13. Run backup: Origin `main` → GitHub `main` (and tags) via the **backup identity only**, using its GitHub ruleset bypass. Confirm a routine identity cannot push GitHub `main`.
 14. Confirm GitHub `main` SHA equals Origin `main` SHA.
 15. Declare cutover complete only after steps 1–14. After that, do not start implementation Cloud Agents on GitHub.
 
@@ -126,9 +141,9 @@ Not performed from the GitHub-cloned Cloud Agent that authored these docs:
 1. Merge GitHub PR #13 after independent review (last GitHub-workflow governance PR).
 2. Confirm Origin namespace `{owner}` and repo URL.
 3. Equalize Origin `main` and GitHub `main` SHAs, then **Detach from GitHub**.
-4. Protect Origin `main` (PR required, no direct push, independent review required, CI required when CI exists, auto-merge when ready).
+4. Protect Origin `main` (PR required, no direct push, independent review required, CI required when CI exists, merge-when-ready allowed). Do **not** give implementation agents a bypass on Origin `main`.
 5. Attach Depot or Buildkite if CI should be a merge gate.
-6. Create a GitHub backup identity that can push `main` and tags, and deny push access to everyone else for routine work.
-7. Wire backup on each Origin merge; test SHA match.
-8. Start the first Origin Cloud Agent and run the test PR through review, CI, auto-merge, and backup (cutover steps 7–14).
+6. Protect GitHub `main` against routine writes. Create a GitHub backup identity and set it as the **only** ruleset bypass/allowlisted actor for the Origin→GitHub backup path. Do not give that bypass to developers or agents.
+7. Wire backup on each Origin merge; test SHA match; confirm a non-backup identity cannot push GitHub `main`.
+8. Start the first Origin Cloud Agent and run the test PR: implementer arms merge-when-ready → independent review → automatic merge → backup (cutover steps 7–14).
 9. Stop launching new implementation agents against GitHub.

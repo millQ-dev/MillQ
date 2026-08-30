@@ -13,9 +13,9 @@ This repository currently contains only the project foundation. Application code
 - Canonical remote: `https://origin.cursor.com/{owner}/MillQ.git` (replace `{owner}` with the Origin codebase name)
 - Browse: [cursor.com/codebase](https://cursor.com/codebase)
 - Start Cloud Agents against the Origin repository
-- Open PRs on Origin; independent agent review; auto-merge for Level A/B when rules pass
+- Open PRs on Origin; Implementation Agent arms merge-when-ready; independent agent review; ruleset merges for Level A/B
 - Do not merge work on GitHub; do not dual-write
-- After cutover only backup automation writes GitHub `main`
+- After cutover only the backup identity writes GitHub `main`, as the sole GitHub ruleset bypass
 
 Details: [`docs/processes/origin-github-hosting.md`](docs/processes/origin-github-hosting.md), [`docs/processes/autonomous-development.md`](docs/processes/autonomous-development.md), and [ADR-0004](docs/decisions/ADR-0004-origin-source-of-truth.md).
 

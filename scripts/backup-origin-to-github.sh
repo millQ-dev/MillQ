@@ -2,8 +2,12 @@
 # GitHub backup job for MillQ.
 #
 # Intended identity: backup automation / service account only.
-# Developers and Cloud Agents doing feature work must not run this as a
-# substitute for Origin PRs, and must not dual-write from a working clone.
+# This identity must be the sole GitHub ruleset bypass/allowlisted actor
+# for fast-forwarding main and tags. Developers, Implementation Agents,
+# and Review Agents must not have that bypass and must not run this as
+# development dual-write.
+#
+# Never force-push GitHub main. Never use this path to land feature work.
 #
 # This script is not wired to Origin webhooks or a scheduler in this
 # repository. Do not treat it as a verified live backup until cutover

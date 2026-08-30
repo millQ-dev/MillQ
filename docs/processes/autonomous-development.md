@@ -41,7 +41,7 @@ Examples:
 
 Pipeline:
 
-`Implementation Agent → Origin PR → Independent Review Agent → CI → Auto Merge`
+`Implementation Agent → Origin PR + merge-when-ready → Independent Review Agent → CI/ruleset → automatic merge`
 
 ### Level B — Guarded Autonomous
 
@@ -62,7 +62,7 @@ Examples:
 
 Pipeline:
 
-`Implementation Agent → Specialist Review Agent → CI → Auto Merge`
+`Implementation Agent → Origin PR + merge-when-ready → Specialist Review Agent → CI/ruleset → automatic merge`
 
 ### Level C — Owner decision required
 
@@ -84,9 +84,9 @@ Examples:
 
 Pipeline:
 
-`Proposal / ADR → OWNER DECISION → Implementation Agent → Independent Review Agent → CI → merge`
+`Proposal / ADR → OWNER DECISION → Implementation Agent → Origin PR + merge-when-ready → Independent Review Agent → CI/ruleset → automatic merge`
 
-After the owner accepts the decision, implementation is autonomous again. The owner does not have to merge the implementation PR.
+After the owner accepts the decision, implementation is autonomous again. The owner does not have to merge the implementation PR. Merge-when-ready may be armed only after that owner decision is recorded.
 
 Changing this file, `PROJECT_CHARTER.md`, `AGENTS.md`, or ADR-0004 is Level C.
 
@@ -99,8 +99,15 @@ Changing this file, `PROJECT_CHARTER.md`, `AGENTS.md`, or ADR-0004 is Level C.
 - Implement only the agreed scope on a branch from Origin `main`.
 - Run relevant tests and update documentation.
 - Open an Origin pull request. Declare the autonomy level.
-- Do **not** approve, merge, or auto-merge your own PR.
-- Do **not** push to GitHub. Do **not** push directly to `main`.
+- **Arm merge-when-ready** on that PR when allowed (`origin pr merge --auto`). This is required for unattended Level A/B delivery. It is **not** self-approval: Origin rulesets must still require an independent `APPROVE` and required CI/checks before the merge happens.
+- Level C: arm merge-when-ready only after the owner decision is recorded on the PR.
+- Must **not**:
+  - self-approve;
+  - perform an immediate or unconditional merge;
+  - bypass Origin branch protections;
+  - remove required reviews or checks;
+  - force-push or direct-push Origin `main`;
+  - push to GitHub.
 
 ### Review Agent
 
@@ -120,7 +127,7 @@ Check:
 - documentation
 - declared autonomy level (reject under-classified PRs)
 
-Result: `APPROVE` or `REQUEST CHANGES`.
+Result: `APPROVE` or `REQUEST CHANGES`. The Review Agent does **not** arm merge-when-ready. That is the Implementation Agent’s job.
 
 Self-approval is invalid even if the same person launches both agents. The **contexts** must be independent.
 
@@ -132,14 +139,25 @@ After `REQUEST CHANGES`:
 - Re-run tests.
 - Push to the same Origin branch.
 - Request review again. Do not approve the follow-up yourself.
+- Re-arm merge-when-ready if it was disabled (`origin pr merge --auto`). Do not merge immediately.
 
 ## Auto-merge
 
-Level A and Level B pull requests **must be able to merge automatically** once all merge requirements are met. Freedom comes from automation and rulesets, not from an unprotected `main`.
+Level A and Level B pull requests **must be able to merge automatically** once all merge requirements are met. No human merge click is required. Freedom comes from automation and rulesets, not from an unprotected `main`.
 
-**Direct push to `main` is forbidden.**
+**Direct push to Origin `main` is forbidden.**
 
-Merge is allowed only when all of the following are true:
+### Who arms merge-when-ready
+
+| Actor | Arms `origin pr merge --auto`? | Approves the PR? | Merges immediately? |
+| --- | --- | --- | --- |
+| Implementation Agent (and Fix Agent) | **Yes** — required on Level A/B after opening or updating the PR. Level C only after the owner decision is recorded | **No** | **No** |
+| Review Agent | No | Yes (`APPROVE` / `REQUEST CHANGES`) | No |
+| Owner | Not required for A/B | Not required for A/B. Level C: decides the proposal/ADR | Not required |
+
+Arming merge-when-ready is not self-approval. The ruleset, not the implementer, performs the merge after independent approval and required checks.
+
+Merge actually happens only when all of the following are true:
 
 - required tests pass
 - required CI / Origin checks pass (when CI exists; until CI exists, the Review Agent must record that CI is not yet a merge gate)
@@ -155,9 +173,7 @@ Documented Origin mechanism (verified in public CLI docs, not verified against t
 origin pr merge --auto
 ```
 
-That command means: merge once Origin requirements are met, then return. `--disable-auto` turns it off for that PR.
-
-Do not enable auto-merge on a Level C PR that still lacks owner decision.
+That command means: merge once Origin requirements are met, then return. It must not be used as an immediate/unconditional merge. `--disable-auto` turns it off for that PR.
 
 Until Origin Rules and Protections are configured for this repository, auto-merge is the **target** behaviour, not a verified live gate. See remaining owner actions in [`origin-github-hosting.md`](origin-github-hosting.md).
 
@@ -169,7 +185,7 @@ Configure on Origin **Settings → Rules and Protections** (owner/platform opera
 2. Require an independent approving review. The author cannot satisfy this requirement.
 3. Require CI checks once CI is attached (Depot or Buildkite on an Origin-hosted repo; they do not apply to GitHub-mirrored repos).
 4. Allow merge-when-ready / auto-merge for PRs that meet those requirements.
-5. Do not allow bypass of `main` protection for implementation agents.
+5. Do not allow bypass of Origin `main` protection for implementation agents, review agents, or human developers.
 
 The Origin CLI can **list and view** rulesets (`origin ruleset list`). Creating or editing them is a dashboard operation. This repository does not contain a fabricated ruleset file.
 

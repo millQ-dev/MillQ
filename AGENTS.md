@@ -103,9 +103,10 @@ Do not let docs drift from implemented behavior.
 - Allowed branch prefixes are `feature/`, `fix/`, and `chore/`.
 - Commits must be atomic and use Conventional Commit style.
 - Pull Requests must include summary, scope, testing, risks, linked work item, and autonomy level.
-- **Do not push directly to `main`.** Protection stays on. Autonomy is auto-merge after review and CI, not an unprotected default branch.
-- **Do not approve or merge your own implementation.** Independent review is mandatory and may be an authorized independent agent.
-- **Do not push to GitHub.** After cutover only backup automation writes to GitHub. Dual-write is forbidden.
+- **Do not push directly to Origin `main`.** Protection stays on. Autonomy is merge-when-ready after independent review and CI, not an unprotected default branch.
+- **Do not self-approve.** Independent review is mandatory and may be an authorized independent agent.
+- **Do arm merge-when-ready** on your own Level A/B Origin PR (`origin pr merge --auto`) after opening it. That is required for unattended merge and is **not** self-approval. Do not perform an immediate/unconditional merge, bypass Origin protections, or remove required reviews/checks. Level C: arm merge-when-ready only after the owner decision is recorded.
+- **Do not push to GitHub.** After cutover only the backup automation identity writes to GitHub, via an explicit GitHub ruleset bypass that implementation agents do not receive. Dual-write is forbidden.
 - Follow `docs/processes/origin-github-hosting.md`, `docs/processes/autonomous-development.md`, and ADR-0004. Do not use Origin’s Sync-from-GitHub mode (that keeps GitHub as source).
 
 ## 9. AI role separation
@@ -114,10 +115,10 @@ Do not let docs drift from implemented behavior.
 - Codex is for isolated autonomous tasks against Origin, not a second GitHub history.
 - Implementation Agent, Review Agent, and Fix Agent are defined in `docs/processes/autonomous-development.md`.
 - Implementation and review for the same change must use separate contexts.
-- An agent must not approve its own unreviewed implementation.
+- An agent must not approve its own implementation.
 - Reviewers inspect correctness, scope, tests, security, documentation, invariants, and whether the declared level is honest.
-- Review result is `APPROVE` or `REQUEST CHANGES`. Human owner review is not required on Level A or B PRs.
-- Level C needs an owner decision on the proposal/ADR. After that, implementation and review are autonomous; the owner does not have to merge.
+- Review result is `APPROVE` or `REQUEST CHANGES`. The Review Agent does not arm merge-when-ready. Human owner review is not required on Level A or B PRs.
+- Level C needs an owner decision on the proposal/ADR. After that, the Implementation Agent arms merge-when-ready; the owner does not have to merge.
 
 ## 10. Definition of Done
 
@@ -133,7 +134,7 @@ A change is complete only when:
 - independent review is `APPROVE` from a context that did not author the change
 - unresolved review threads are empty
 - CI passes when CI exists
-- Level A/B PRs are eligible for auto-merge (`origin pr merge --auto` once Origin requirements are configured)
+- Level A/B PRs have merge-when-ready armed by the Implementation Agent (`origin pr merge --auto` once Origin requirements are configured)
 
 ## 11. Required completion report
 
@@ -146,3 +147,4 @@ At the end of every task, the agent must report:
 - known limitations or follow-up work
 - autonomy level (A/B/C)
 - whether independent review was requested (implementation agents must not self-approve)
+- whether merge-when-ready was armed (required for Level A/B; Level C only after owner decision)

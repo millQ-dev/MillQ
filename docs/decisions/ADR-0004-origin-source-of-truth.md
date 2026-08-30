@@ -37,19 +37,18 @@ Adopt **Option B**.
 | --- | --- |
 | Canonical git host | Cursor Origin (`https://origin.cursor.com/{owner}/MillQ.git`, browse at `https://cursor.com/codebase`) |
 | Backup git host | GitHub `https://github.com/millQ-dev/MillQ` — mirror of Origin `main` (and tags) only |
-| Who writes GitHub after cutover | Backup automation / service account only |
+| Auto-merge | Implementation Agent arms merge-when-ready on Level A/B PRs (`origin pr merge --auto`). That is not self-approval. Origin rulesets still require independent approval and CI. Immediate merge and Origin `main` bypass are forbidden. Level C: arm only after owner decision is recorded |
+| Who writes GitHub after cutover | Backup automation / service account only, as the sole GitHub ruleset bypass/allowlisted actor for Origin→GitHub replication |
 | Dual-write | Forbidden. Agents and developers must not push one commit to both remotes |
-| Pull requests | Open, review, and merge on Origin |
+| Pull requests | Open, review, and merge on Origin. Direct push to Origin `main` is forbidden |
 | Review | Independent review is mandatory and may be an authorized independent agent. Authors cannot approve their own change |
-| Auto-merge | Level A and B PRs merge when review, CI, and ruleset requirements pass. Direct push to `main` remains forbidden |
-| Cloud Agents | Start against the Origin repository, not against GitHub |
 | Work tracking | Cloud Agent run URL and/or Origin pull request. Historical GitHub issues remain citations only |
 | CI | When CI is introduced, attach it to Origin (Depot, Buildkite, or equivalent) after Detach. GitHub Actions on the backup is optional and not canonical |
 | Security reports | Private report to Origin/Cursor repository maintainers. Do not file public GitHub issues |
 
 ### Classification
 
-- **Accepted:** Origin is the source of truth; GitHub is backup only; dual-write is forbidden; independent agent review is sufficient except Level C owner decisions.
+- **Accepted:** Origin is the source of truth; GitHub is backup only; dual-write is forbidden; independent agent review is sufficient except Level C owner decisions; Implementation Agents arm merge-when-ready without that counting as self-approval.
 - **Operational gate:** Cutover steps in `docs/processes/origin-github-hosting.md` must be completed so Origin is a **native / detached** repository, not a GitHub-sourced mirror. Rulesets, CI, auto-merge, and backup automation are owner/platform operations and are **not** claimed as live from the GitHub-cloned authoring environment.
 - **Deferred:** Exact Origin namespace `{owner}` once confirmed in the codebase UI; wiring of Origin `pull_request.merged` (or equivalent) to the backup job; Origin Rules and Protections contents once configured in the dashboard.
 
@@ -66,7 +65,7 @@ This ADR amends ADR-0001’s “GitHub Actions compatibility” requirement: CI 
 ### Negative / accepted costs
 
 - Origin is early beta. Namespace cannot be renamed during beta. Feature gaps vs GitHub (issues, Actions, public repos) are accepted.
-- After **Detach from GitHub**, Cursor stops syncing to GitHub. Backup must be a separate one-way job: Origin `main` → backup identity → GitHub `main` (and tags) after each merge.
+- After **Detach from GitHub**, Cursor stops syncing to GitHub. Backup must be a separate one-way job: Origin `main` → backup identity → GitHub `main` (and tags) after each merge. On GitHub, that identity is the only ruleset bypass for `main`; Origin `main` stays without implementer bypass.
 - Historical GitHub issue links stay valid as archive; they are not the live backlog.
 - This Cloud Agent run still clones GitHub. Hosting cutover, rulesets, CI apps, and backup credentials cannot be finished from a GitHub-only checkout and must not be reported as done.
 
@@ -77,7 +76,8 @@ This ADR amends ADR-0001’s “GitHub Actions compatibility” requirement: CI 
 3. **Diverged histories** if Origin already has commits GitHub does not, or the reverse, and cutover is done without comparing SHAs.
 4. **Lost work tracking** if new GitHub issues keep being filed and agents ignore them.
 5. **Backup drift** if Origin `main` is not pushed to GitHub after each merge, or if developers dual-write instead of using the backup identity.
-6. **Owner bottleneck** if independent review is misread as “human owner must click merge on every PR”.
+6. **Owner bottleneck** if independent review is misread as “human owner must click merge on every PR”, or if Implementation Agents are forbidden from arming merge-when-ready.
+7. **GitHub backup blocked** if `main` protection has no bypass for the backup identity, or **GitHub workplace restored** if that bypass is given to developers.
 
 ## Rejected alternatives
 
@@ -97,7 +97,7 @@ This ADR amends ADR-0001’s “GitHub Actions compatibility” requirement: CI 
 1. Independent review of this ADR, the charter revision, and the autonomous operating model (separate context from the authoring agent). This is Level C governance: owner decision is this instruction; the author must not merge it.
 2. After that merge, complete the numbered cutover checklist in `docs/processes/origin-github-hosting.md`, including Detach, a test Origin Cloud Agent, independent review, auto-merge, and backup SHA match.
 3. Confirm Origin Settings → General no longer lists GitHub as source.
-4. Confirm only the backup identity can write GitHub `main`.
+4. Confirm only the backup identity can write GitHub `main`, via an explicit GitHub ruleset bypass that other identities do not have.
 5. Disable GitHub as a workplace (no GitHub PR merges, no new GitHub issues as the queue).
 
 ## Conditions for revisiting the decision
