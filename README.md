@@ -13,9 +13,11 @@ This repository currently contains only the project foundation. Application code
 - Canonical remote: `https://origin.cursor.com/{owner}/MillQ.git` (replace `{owner}` with the Origin codebase name)
 - Browse: [cursor.com/codebase](https://cursor.com/codebase)
 - Start Cloud Agents against the Origin repository
-- Do not merge work on GitHub
+- Open PRs on Origin; independent agent review; auto-merge for Level A/B when rules pass
+- Do not merge work on GitHub; do not dual-write
+- After cutover only backup automation writes GitHub `main`
 
-Details: [`docs/processes/origin-github-hosting.md`](docs/processes/origin-github-hosting.md) and [ADR-0004](docs/decisions/ADR-0004-origin-source-of-truth.md).
+Details: [`docs/processes/origin-github-hosting.md`](docs/processes/origin-github-hosting.md), [`docs/processes/autonomous-development.md`](docs/processes/autonomous-development.md), and [ADR-0004](docs/decisions/ADR-0004-origin-source-of-truth.md).
 
 ## Goals
 
@@ -31,10 +33,11 @@ Details: [`docs/processes/origin-github-hosting.md`](docs/processes/origin-githu
 ├── packages/         # Shared libraries and modules (future)
 ├── infrastructure/   # Infrastructure definitions (future)
 ├── docs/             # Product and engineering documentation
+├── scripts/          # Operational scripts (GitHub backup job is not live until wired)
 ├── tests/            # Cross-cutting or shared test assets (future)
 └── .github/          # Templates retained for the GitHub backup remote; not the live workflow
 ```
 
 ## Status
 
-Foundation only. No application runtime, dependencies, or CI/CD are defined yet.
+Foundation only. No application runtime is defined yet. Hosting, autonomy levels, and Origin/GitHub backup **process** are defined; Origin Detach, rulesets, CI, auto-merge, and backup automation are **not** verified live from this checkout.
