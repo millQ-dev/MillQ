@@ -1,8 +1,9 @@
 # MillQ Current State
 
-**Checkpoint:** branch `feature/foundation-operational-core` @ `b03d441baa0d5bd0a5b9a7d5385736a78b7d12e3`
+**Checkpoint:** branch `feature/foundation-operational-core` @ `7f2b99e`  
 **Canonical host:** Cursor Origin (`https://origin.cursor.com/millqdev/MillQ.git`)  
 **Backup host:** GitHub `https://github.com/millQ-dev/MillQ.git` (mirror only — do not merge work here)  
+**Origin PR:** https://cursor.com/codebase/millqdev/MillQ/pull/1  
 **Updated:** 2026-08-31
 
 ## Accepted decisions
