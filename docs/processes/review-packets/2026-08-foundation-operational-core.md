@@ -1,9 +1,8 @@
-# Review packet — Foundation Operational Core (correction)
+# Review packet — Foundation Operational Core (Origin)
 
-Дата: 2026-08-30  
-Issue: https://github.com/millQ-dev/MillQ/issues/14  
-Branch: `feature/foundation-operational-core`
+Дата: 2026-08-31  
+Canonical: Cursor Origin  
+Origin PR: https://cursor.com/codebase/millqdev/MillQ/pull/1  
+Legacy GitHub PR #15: closed (pre-cutover)
 
-См. также шаблон: `docs/processes/chatgpt-review-packet-template.md`
-
-Готовый текст для копирования выдаётся агентом в конце ответа после создания PR.
+Готовый текст для копирования — в ответе агента (`=== ПАКЕТ ДЛЯ CHATGPT ===`).
