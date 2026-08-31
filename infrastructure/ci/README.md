@@ -1,15 +1,21 @@
-# CI workflow source
+# CI workflow definitions
 
-GitHub OAuth tokens without the `workflow` scope cannot push files under `.github/workflows/`.
+## Origin (canonical)
 
-Canonical CI definition for this foundation block:
+**Origin CI is not attached yet.** Merge gates today are:
 
-- [`github-actions-ci.yml`](./github-actions-ci.yml)
+- local `pnpm install --frozen-lockfile` / typecheck / test / build
+- migrate + `/health` smoke when Postgres is available
+- independent Origin review
+- Origin ruleset
 
-To activate on GitHub:
+Do not claim Origin CI is green until a Cursor Origin CI integration is actually wired.
 
-1. `gh auth refresh -h github.com -s workflow`
+## GitHub Actions (dormant / backup-compatible)
 
-2. Copy this file to `.github/workflows/ci.yml` and push
+Files:
 
-Or paste the same content via the GitHub UI (Actions → New workflow).
+- `.github/workflows/ci.yml` (same definition)
+- [`github-actions-ci.yml`](./github-actions-ci.yml) (copy under infrastructure)
+
+These are **not** Origin merge gates. They remain for future backup-remote compatibility only. Do not dual-write or treat GitHub Actions as the approval path after Origin cutover.

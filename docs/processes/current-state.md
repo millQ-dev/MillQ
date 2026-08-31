@@ -1,10 +1,9 @@
 # MillQ Current State
 
-**Checkpoint:** branch `feature/foundation-operational-core` @ `a14c9ae`  
-**Base:** `main` @ `f568789` (Block A accepted)  
-**Updated:** 2026-08-30  
-**Issue:** https://github.com/millQ-dev/MillQ/issues/14  
-**PR:** https://github.com/millQ-dev/MillQ/pull/15
+**Checkpoint:** branch `feature/foundation-operational-core` (post Origin cutover rebase)  
+**Canonical host:** Cursor Origin (`https://origin.cursor.com/millqdev/MillQ.git`)  
+**Backup host:** GitHub `https://github.com/millQ-dev/MillQ.git` (mirror only — do not merge work here)  
+**Updated:** 2026-08-31
 
 ## Accepted decisions
 
@@ -13,17 +12,18 @@
 | ADR-0001 | Accepted | TypeScript monorepo, React, Node modular monolith, PostgreSQL |
 | ADR-0002 | Accepted | Money, quantity, units, rounding |
 | ADR-0003 | Accepted | Yield, preparations, moving-average costing |
-| ADR-0006 | **Accepted** (2026-08-30) | Production Intelligence boundary |
-| ADR-0007 | **Accepted** (2026-08-30) | Concrete foundation scaffolding stack |
+| ADR-0004 | Accepted | Cursor Origin is source of truth; GitHub is backup |
+| ADR-0006 | Accepted (2026-08-30) | Production Intelligence boundary |
+| ADR-0007 | Accepted (2026-08-30) | Concrete foundation scaffolding stack |
 
 ## Still Proposed / separate review
 
 | Item | Status |
 | --- | --- |
-| ADR-0004 / ADR-0005 (Block B) | Proposed — draft PR #12 |
+| Block B domain-boundary ADRs (draft branch / former GitHub PR #12) | Proposed — **not** the same as Origin hosting ADR-0004 |
 | Block B questions B-01–B-18 | Open |
 
-Foundation domain map **provisionally aligns** with Block B proposal and does **not** accept unresolved Block B Product Owner decisions.
+Foundation domain map **provisionally aligns** with the Block B proposal and does **not** accept unresolved Block B Product Owner decisions.
 
 ## What exists now
 
@@ -34,6 +34,7 @@ Foundation domain map **provisionally aligns** with Block B proposal and does **
 - Historical truth model + operational fact feed guardrail
 - Offline foundation (idempotency conflict rule)
 - Foundation stack (ADR-0007)
+- Origin/GitHub hosting + autonomy process (ADR-0004)
 - ChatGPT review packet ritual
 
 ### Executable code
@@ -47,15 +48,21 @@ Foundation domain map **provisionally aligns** with Block B proposal and does **
 
 ### Infrastructure
 
-- PostgreSQL local (Docker Compose file and/or local Homebrew Postgres)
-- `apps/api/migrations/001_foundation.sql` — `operational_fact_feed` + `recommendations` (feed ≠ module source of truth)
-- CI workflow definition: `infrastructure/ci/github-actions-ci.yml` (activation into `.github/workflows/` needs `workflow` OAuth scope)
+- PostgreSQL local (Docker Compose and/or local Homebrew Postgres)
+- `apps/api/migrations/001_foundation.sql` — `operational_fact_feed` + `recommendations`
+- **CI:** Origin CI **not attached yet**. Dormant GitHub Actions definition may live under `.github/workflows/` / `infrastructure/ci/` for backup compatibility and is **not** an Origin merge gate.
 
 ## Explicitly not started
 
 - Block C (GoodsReceived persistence / inventory source tables)
-- Block B acceptance / merge of ADR-0004/0005
+- Block B domain ADR acceptance
 
-## Next recommended block (after merge of this foundation)
+## Merge gates (current)
 
-**Block C — Operational persistence and first commands** (only after Product Owner merge of this foundation PR).
+1. Local: `pnpm install --frozen-lockfile`, `typecheck`, `test`, `build`, migrate smoke, `/health` with live Postgres
+2. Independent Origin review (`APPROVE`)
+3. Origin ruleset (push protection on `main`)
+
+## Next recommended block (after Origin merge of this foundation)
+
+**Block C — Operational persistence and first commands.**

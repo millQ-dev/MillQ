@@ -3,7 +3,7 @@
 - **Status:** Foundation reference (provisional alignment with Block B proposal)
 - **Date:** 2026-08-19
 - **Updated:** 2026-08-30
-- **Block B:** ADR-0004 / ADR-0005 remain **Proposed** (draft PR #12). This map **anticipates** that proposal; it does **not** accept Block B Product Owner decisions.
+- **Block B:** domain-boundary ADRs remain **Proposed** on the draft Block B branch (historically labeled ADR-0004/0005 there — **not** the same document as Accepted Origin hosting [ADR-0004](../decisions/ADR-0004-origin-source-of-truth.md)). This map **anticipates** that proposal; it does **not** accept Block B Product Owner decisions.
 - **Aligns with:** Operational Core + Production Intelligence model ([ADR-0006 Accepted](../decisions/ADR-0006-production-intelligence-boundary.md))
 
 Implementation must not hard-code unresolved Block B Product Owner decisions before that review is complete.

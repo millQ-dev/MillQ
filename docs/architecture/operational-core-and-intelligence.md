@@ -11,7 +11,7 @@ MillQ is not only a POS and accounting system. It has two connected but delibera
 1. **MillQ Operational Core** — the authoritative operational system.
 2. **MillQ Production Intelligence** — recommendations and business intelligence built on reliable operational facts.
 
-This document reconciles that product direction with the existing accepted architecture. It does not replace Block B module boundaries (ADR-0004/0005 remain **Proposed** until accepted; foundation only provisionally aligns with that proposal).
+This document reconciles that product direction with the existing accepted architecture. It does not replace Block B module boundaries (Block B domain ADRs remain **Proposed** until accepted; foundation only provisionally aligns with that proposal). Note: Accepted [ADR-0004](../decisions/ADR-0004-origin-source-of-truth.md) is Origin hosting, not Block B.
 
 ## 2. Operational Core
 
