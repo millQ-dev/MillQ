@@ -1,3 +1,8 @@
+# Dependencies and build output
+node_modules/
+dist/
+.pnpm-store/
+
 # OS
 .DS_Store
 Thumbs.db
@@ -36,8 +41,10 @@ temp/
 *.tar.gz
 *.rar
 *.7z
-*.sql
 *.dump
+# Allow versioned migration SQL; ignore ad-hoc local dumps
+*.sql
+!apps/api/migrations/**/*.sql
 
 # Coverage / reports (generic)
 coverage/

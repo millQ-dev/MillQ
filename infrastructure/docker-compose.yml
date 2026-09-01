@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: millq-postgres
+    restart: unless-stopped
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: millq
+      POSTGRES_PASSWORD: millq
+      POSTGRES_DB: millq_dev
+    volumes:
+      - millq_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U millq -d millq_dev']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  millq_pg_data:

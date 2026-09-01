@@ -119,6 +119,9 @@ Do not let docs drift from implemented behavior.
 - Reviewers inspect correctness, scope, tests, security, documentation, invariants, and whether the declared level is honest.
 - Review result is `APPROVE` or `REQUEST CHANGES`. The Review Agent does not arm merge-when-ready. Human owner review is not required on Level A or B PRs.
 - Level C needs an owner decision on the proposal/ADR. After that, the Implementation Agent arms merge-when-ready; the owner does not have to merge.
+- Strategic Product Owner review may happen in an external ChatGPT thread. Cursor does not auto-sync to that thread.
+- Before merge of a development block, the Cursor agent must produce a **safe ChatGPT review packet** (Russian, copy-paste ready) using `docs/processes/chatgpt-review-packet-template.md`.
+- The packet must never include secrets, `.env` values, credentials, PII, or full Cursor chat history.
 
 ## 10. Definition of Done
 
@@ -148,3 +151,9 @@ At the end of every task, the agent must report:
 - autonomy level (A/B/C)
 - whether independent review was requested (implementation agents must not self-approve)
 - whether merge-when-ready was armed (required for Level A/B; Level C only after owner decision)
+
+At the end of every **merge-candidate development block** (and whenever the Product Owner asks), the agent must additionally end with a clearly marked section:
+
+`=== ПАКЕТ ДЛЯ CHATGPT (безопасный handoff) ===` … `=== КОНЕЦ ПАКЕТА ===`
+
+filled per `docs/processes/chatgpt-review-packet-template.md`. Optionally also save a copy under `docs/processes/review-packets/`.

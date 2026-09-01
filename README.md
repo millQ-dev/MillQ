@@ -2,42 +2,77 @@
 
 MillQ is a modern restaurant management platform for Vietnam.
 
-The long-term product vision includes POS, inventory management, warehouse accounting, purchasing, recipes, production, food cost, CRM, analytics, finance, employee management, and business automation.
+The product consists of two deliberately separated capabilities:
 
-This repository currently contains only the project foundation. Application code, frameworks, and infrastructure decisions will be added in later stages.
+1. **Operational Core** — authoritative POS, inventory, purchasing, recipes, payments, audit
+2. **Production Intelligence** — recommendations and analytics built on operational facts (future sellable module)
 
 ## Hosting
 
 **Cursor Origin is the source of truth.** GitHub `millQ-dev/MillQ` is a backup mirror only.
 
-- Canonical remote: `https://origin.cursor.com/{owner}/MillQ.git` (replace `{owner}` with the Origin codebase name)
+- Canonical remote: `https://origin.cursor.com/millqdev/MillQ.git`
 - Browse: [cursor.com/codebase](https://cursor.com/codebase)
-- Start Cloud Agents against the Origin repository
 - Open PRs on Origin; Implementation Agent arms merge-when-ready; independent agent review; ruleset merges for Level A/B
 - Do not merge work on GitHub; do not dual-write
-- After cutover only the backup identity writes GitHub `main` and release/protected tags (sole bypass on both GitHub rulesets)
+- After cutover only the backup identity writes GitHub `main` and release/protected tags
 
 Details: [`docs/processes/origin-github-hosting.md`](docs/processes/origin-github-hosting.md), [`docs/processes/autonomous-development.md`](docs/processes/autonomous-development.md), and [ADR-0004](docs/decisions/ADR-0004-origin-source-of-truth.md).
-
-## Goals
-
-- Build a durable enterprise SaaS foundation for restaurant operations
-- Support multi-module growth without premature technology lock-in
-- Keep architecture, documentation, and delivery practices explicit and reviewable
 
 ## Repository structure
 
 ```text
 .
-├── apps/             # Deployable applications (future)
-├── packages/         # Shared libraries and modules (future)
-├── infrastructure/   # Infrastructure definitions (future)
-├── docs/             # Product and engineering documentation
-├── scripts/          # Operational scripts (GitHub backup job is not live until wired)
-├── tests/            # Cross-cutting or shared test assets (future)
-└── .github/          # Templates retained for the GitHub backup remote; not the live workflow
+├── apps/
+│   ├── api/          # Node.js Operational Core HTTP service
+│   └── web/          # React client shell
+├── packages/
+│   ├── domain/       # Money, quantity, conversion, yield (ADR-0002/0003)
+│   └── contracts/    # Operational facts and Intelligence DTOs
+├── infrastructure/   # Docker Compose + dormant GitHub Actions definition
+├── docs/             # Architecture, ADRs, processes
+├── scripts/          # Operational scripts (GitHub backup job not live until wired)
+├── tests/            # Cross-cutting test assets (future)
+└── .github/          # Templates / dormant workflow for GitHub backup remote
 ```
+
+## Local development
+
+Requirements: Node.js ≥ 20, pnpm 9, PostgreSQL 16 (Docker Compose **or** local install).
+
+```bash
+cp .env.example .env
+# Option A: Docker Compose
+docker compose -f infrastructure/docker-compose.yml up -d
+# Option B: local PostgreSQL matching DATABASE_URL
+
+pnpm install --frozen-lockfile
+pnpm --filter @millq/api run migrate
+pnpm dev
+```
+
+- API health: http://localhost:3000/health
+- Web shell: http://localhost:5173
+
+## Commands
+
+| Command | Description |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Install workspace dependencies |
+| `pnpm dev` | Run API and web in parallel |
+| `pnpm test` | Run all package tests |
+| `pnpm build` | Build all packages |
+| `pnpm typecheck` | Typecheck all packages |
+
+## Documentation
+
+- [`PROJECT_CHARTER.md`](PROJECT_CHARTER.md) — product authority
+- [`AGENTS.md`](AGENTS.md) — agent operating rules
+- [`docs/processes/current-state.md`](docs/processes/current-state.md) — what exists now
+- [`docs/decisions/`](docs/decisions/) — ADRs
 
 ## Status
 
-Foundation only. No application runtime is defined yet. Hosting, autonomy levels, and Origin/GitHub backup **process** are defined; Origin Detach, rulesets, CI, auto-merge, and backup automation are **not** verified live from this checkout.
+Foundation Operational Core (Origin merge candidate): Accepted ADR-0001…0003, **ADR-0006**, **ADR-0007**; typed operational facts; CostValue yield math; fact feed guardrail. Full POS and Block C are not started. Block B domain-boundary ADRs remain Proposed on a separate draft (note: Origin hosting ADR-0004 is Accepted and is a different decision).
+
+**CI:** Origin CI not attached yet. Current merge gates are local checks + independent Origin review + Origin ruleset. GitHub Actions workflow may exist as dormant/backup-compatible definition and is **not** a merge gate.
