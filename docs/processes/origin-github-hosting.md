@@ -12,7 +12,7 @@ Agent autonomy, review, and auto-merge live in [`autonomous-development.md`](aut
 | Open, review, merge pull requests | Origin |
 | Start Cloud Agents | Origin repository |
 | Track new work | Cloud Agent run and/or Origin pull request |
-| Write GitHub `main` / tags after cutover | Backup automation / service account **only** |
+| Write GitHub `main` / tags after cutover | GitHub App **MillQ Origin Backup** only |
 | File new GitHub issues or merge GitHub PRs | Do not |
 
 Built-in Origin **Sync from GitHub** is the wrong direction. That mode makes GitHub the source and Origin the mirror. MillQ’s rule is the reverse.
@@ -53,15 +53,28 @@ git remote set-url --push github no_push
 
 Target path after every Origin merge:
 
-`Origin main → backup automation / service account → GitHub main`
+`Origin main → GitHub App “MillQ Origin Backup” → GitHub main`
 
-Also push tags so GitHub reflects Origin tags.
+Also push **Origin tags** so GitHub reflects those tags.
+
+**Scope:** Origin `main` and Origin tags only. Do **not** mirror other branches. Do **not** fetch or merge GitHub state into Origin.
+
+### Backup identity and authentication
+
+The writer is the GitHub App **MillQ Origin Backup**, installed only on `millQ-dev/MillQ`. It is the intended ruleset bypass identity. [`scripts/backup-origin-to-github.sh`](../../scripts/backup-origin-to-github.sh) authenticates as follows:
+
+1. Read `GITHUB_APP_ID`, `GITHUB_APP_INSTALLATION_ID`, and `GITHUB_APP_PRIVATE_KEY` from the automation environment.
+2. Sign a short-lived GitHub App JWT with the private key.
+3. Exchange the JWT for an installation access token (`POST /app/installations/{id}/access_tokens`).
+4. Push GitHub HTTPS using that token (`x-access-token` basic extraheader). Never anonymous HTTPS write. Never a PAT or personal-account login.
+
+If those secrets are missing or token creation fails, the job must exit without pushing. Do not print the JWT, installation token, or private key.
 
 ### Who may write GitHub `main`
 
 After cutover:
 
-- The **backup automation/service identity is the only identity authorized** to perform the direct backup write to GitHub `main` and to create/update/delete release/protected tags.
+- The **MillQ Origin Backup** GitHub App is the only identity authorized to perform the direct backup write to GitHub `main` and to create/update/delete release/protected tags.
 - Implementation agents, Review Agents, and normal human development identities **must not** receive this right and **must not** push to GitHub.
 - Dual-write from a working clone is forbidden.
 
@@ -74,7 +87,7 @@ These protections apply to the **GitHub backup host only**. They do not weaken O
 | Branch ruleset | `main` | Routine writes blocked | Backup identity **only** |
 | Tag ruleset | release / protected tags | Creation, update, and deletion restricted | Backup identity **only** |
 
-The same backup automation/service identity is the sole bypass actor on **both** rulesets. Implementation agents, Review Agents, and human developers receive neither bypass. The exception exists only for deterministic Origin→GitHub replication of `main` and of those tags. It must never be used for development, hotfixes, or GitHub PRs.
+The same backup automation/service identity is the sole bypass actor on **both** rulesets. Implementation agents, Review Agents, and human developers receive neither bypass. The exception exists only for deterministic Origin→GitHub replication of `main` and of Origin tags (not other branches). It must never be used for development, hotfixes, or GitHub PRs.
 
 A GitHub branch ruleset that blocks routine writes would also reject the backup job unless that backup identity is listed. The tag ruleset is the matching control so protected tags cannot be created, moved, or deleted except by the same backup path.
 
@@ -84,7 +97,7 @@ Repo-level rulesets on `millQ-dev/MillQ` were empty when last checked from this 
 
 A local `git remote set-url --push github no_push` on developer clones is an extra guard. It does not replace the GitHub rulesets.
 
-Intended job body (not wired, not verified in this environment): [`scripts/backup-origin-to-github.sh`](../../scripts/backup-origin-to-github.sh). Fast-forward only; no force-push of GitHub `main`.
+Job body: [`scripts/backup-origin-to-github.sh`](../../scripts/backup-origin-to-github.sh). Fast-forward only; no force-push of GitHub `main`. Pushes Origin `main` and Origin tags only. GitHub App installation token required; anonymous push is refused.
 
 How to trigger it is an owner/platform choice once Origin is detached, for example:
 

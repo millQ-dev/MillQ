@@ -60,7 +60,7 @@ chore: ignore local editor artifacts
 5. Do not mix unrelated refactors with feature work.
 6. Request an **independent** Review Agent. The implementation agent must not approve the PR.
 7. On Level A/B, the implementation agent **arms merge-when-ready** when opening the PR (`origin pr merge --auto`). Do not merge immediately. Do not push to Origin `main`. Level C: arm merge-when-ready only after the owner decision is recorded.
-8. GitHub backup is updated by backup automation after Origin merge, using the backup identity’s bypass on the GitHub `main` branch ruleset and the release/protected-tag ruleset — never by a parallel GitHub PR or dual-write from the implementer.
+8. GitHub backup is updated by backup automation after Origin merge (`scripts/backup-origin-to-github.sh`): Origin `main` and Origin tags only, authenticated as GitHub App **MillQ Origin Backup**. Never a parallel GitHub PR or dual-write from the implementer.
 
 ## Code review expectations
 

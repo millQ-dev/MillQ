@@ -36,7 +36,7 @@ Adopt **Option B**.
 | Area | Decision |
 | --- | --- |
 | Canonical git host | Cursor Origin (`https://origin.cursor.com/{owner}/MillQ.git`, browse at `https://cursor.com/codebase`) |
-| Backup git host | GitHub `https://github.com/millQ-dev/MillQ` — mirror of Origin `main` (and tags) only |
+| Backup git host | GitHub `https://github.com/millQ-dev/MillQ` — Origin `main` and Origin tags only (not other branches) |
 | Auto-merge | Implementation Agent arms merge-when-ready on Level A/B PRs (`origin pr merge --auto`). That is not self-approval. Origin rulesets still require independent approval and CI. Immediate merge and Origin `main` bypass are forbidden. Level C: arm only after owner decision is recorded |
 | Who writes GitHub after cutover | Backup automation / service account only. Sole bypass actor on two GitHub rulesets: branch `main` (routine writes blocked) and release/protected tags (create/update/delete restricted) |
 | Dual-write | Forbidden. Agents and developers must not push one commit to both remotes |

@@ -42,6 +42,8 @@ jobs:
         run: pnpm typecheck
       - name: Test
         run: pnpm test
+      - name: Backup script auth tests
+        run: bash tests/scripts/backup-origin-to-github.test.sh
       - name: Build
         run: pnpm build
       - name: Wait for PostgreSQL
