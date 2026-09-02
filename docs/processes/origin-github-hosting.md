@@ -142,7 +142,17 @@ If step 5 is skipped while Origin remains a GitHub-sourced mirror, GitHub is sti
 
 ## CI
 
-When CI exists, attach it to Origin. Depot and Buildkite work on **Origin-hosted** repositories, not on GitHub-mirrored repos. Attach CI **after** Detach. Checks on GitHub are not the merge gate.
+Canonical Origin merge CI is **Depot**, defined in [`.depot/workflows/ci.yml`](../../.depot/workflows/ci.yml). Checks on GitHub are not the merge gate.
+
+These files are **not** competing sources of truth. Keep the backup-script test step in lockstep when the Depot workflow changes, but do not treat GitHub Actions as attached Origin CI:
+
+| File | Role |
+| --- | --- |
+| `.depot/workflows/ci.yml` | Origin merge CI (Depot) |
+| `.github/workflows/ci.yml` | Dormant GitHub Actions copy for the backup remote only |
+| `infrastructure/ci/github-actions-ci.yml` | Reference/legacy copy of that GitHub Actions definition |
+
+See [`infrastructure/ci/README.md`](../../infrastructure/ci/README.md).
 
 ## What this process does not do
 
