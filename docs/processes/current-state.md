@@ -14,7 +14,7 @@ Merge gates used: local checks + strategic APPROVE WITH CONDITIONS + Origin rule
 
 **Origin CI:** still **not attached** — must be attached before next serious application merge.
 
-**GitHub backup:** as of this checkpoint, GitHub `main` may still lag Origin until backup automation runs (`scripts/backup-origin-to-github.sh` / owner wiring). Verify before treating GitHub as current.
+**GitHub backup:** Origin `main` and Origin tags only, via `scripts/backup-origin-to-github.sh` as GitHub App **MillQ Origin Backup**. GitHub `main` may still lag until that job succeeds. Verify before treating GitHub as current.
 
 ## Accepted decisions
 

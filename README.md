@@ -31,7 +31,7 @@ Details: [`docs/processes/origin-github-hosting.md`](docs/processes/origin-githu
 │   └── contracts/    # Operational facts and Intelligence DTOs
 ├── infrastructure/   # Docker Compose + dormant GitHub Actions definition
 ├── docs/             # Architecture, ADRs, processes
-├── scripts/          # Operational scripts (GitHub backup job not live until wired)
+├── scripts/          # Operational scripts (Origin→GitHub backup: main and tags via GitHub App)
 ├── tests/            # Cross-cutting test assets (future)
 └── .github/          # Templates / dormant workflow for GitHub backup remote
 ```
