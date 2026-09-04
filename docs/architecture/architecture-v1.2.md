@@ -214,11 +214,13 @@ All of the above are **boundaries and contracts**. Implementation of Catalog pro
 ## 18. Work sequence after this alignment
 
 ```text
-Architecture v1.2 (this change)
+Architecture v1.2 (Accepted)
         ↓
-Block C — GoodsReceived / Inventory vertical (contracted)
+Block C — GoodsReceived / Inventory vertical — MERGED
         ↓
-Later verticals (Menu, Orders, Payments, …)
+Architecture v1.3 alignment (Proposed) — see architecture-v1.3.md
+        ↓
+Later verticals only after v1.3 acceptance (PO launch)
 ```
 
 Former “accept Block B ADRs first” draft numbering is superseded by Architecture v1.2 + ADR-0008…0010 for boundaries. Remaining open product questions from old Block B drafts may still need PO answers, but they no longer block documenting the v1.2 model.
