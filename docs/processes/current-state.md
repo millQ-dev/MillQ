@@ -1,9 +1,9 @@
 # MillQ Current State
 
-**Checkpoint:** Block C implementation on Origin (PR pending independent review)  
+**Checkpoint:** Block C **merged** on Origin `main` @ `a5e84b0` (2026-09-04)  
 **Canonical host:** Cursor Origin (`https://origin.cursor.com/millqdev/MillQ.git`)  
 **Backup host:** GitHub `https://github.com/millQ-dev/MillQ.git` (mirror only)  
-**Architecture baseline:** Architecture v1.2 merged @ `3036319`; docs pin @ `06a7d8e`  
+**Block C PR:** https://cursor.com/codebase/millqdev/MillQ/pull/7 — **merged** (tip before merge `06f8504`)  
 **Updated:** 2026-09-04
 
 ## Runtime / CI / backup
@@ -12,10 +12,10 @@
 | --- | --- |
 | Foundation Operational Core | Merged |
 | Architecture v1.2 | **Merged** (PR #5 → `3036319`) |
-| Block C Goods Receipt vertical | **Implemented** — feature branch / Origin PR (do not merge before strategic review) |
-| Origin CI | **Attached** — Depot [`.depot/workflows/ci.yml`](../../.depot/workflows/ci.yml) |
+| Block C Goods Receipt vertical | **Merged** (PR #7 → `a5e84b0`) |
+| Origin CI | **Attached** — Depot [`.depot/workflows/ci.yml`](../../.depot/workflows/ci.yml); PR #7 Depot checks green |
 | GitHub Actions | Dormant copies only — not Origin merge gate |
-| GitHub backup | GitHub App **MillQ Origin Backup** via `scripts/backup-origin-to-github.sh` |
+| GitHub backup | GitHub App **MillQ Origin Backup** via `scripts/backup-origin-to-github.sh` (verify lag independently) |
 
 ## Accepted decisions
 
@@ -42,9 +42,10 @@
 
 - `@millq/domain` (incl. moving weighted-average helpers), `@millq/contracts`, `@millq/api`, `@millq/web`
 - PostgreSQL migrations `001_foundation.sql`, `002_block_c.sql`
-- Procurement Goods Receipt service: draft / validate / post / reverse
+- Procurement Goods Receipt: draft / validate / POST / reverse
 - Inventory movements + rebuildable `inventory_balance` + CostQuote API
-- `operational_fact_feed` mirror for `GoodsReceived` (not SoT)
+- Line-level `GoodsReceived` operational fact mirror (`supplierReceiptId` document group; `sourceDocumentLineId` line identity)
+- Costing stream per ADR-0003 §5: `warehouse + stockItem + valuationCurrency` (LE = ownership boundary)
 
 ## Explicitly not started
 
@@ -56,5 +57,8 @@
 
 ## Next recommended sequence
 
-1. Independent strategic review + merge of Block C  
-2. Later Menu / Orders / Payments verticals per charter  
+1. ~~Foundation~~ done  
+2. ~~Origin CI (Depot)~~ attached  
+3. ~~Architecture v1.2~~ done  
+4. ~~Block C~~ **done** (`a5e84b0`)  
+5. Later Menu / Orders / Payments verticals per charter — **do not start until PO launches Block D**  
