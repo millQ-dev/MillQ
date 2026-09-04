@@ -40,6 +40,30 @@ describe('parseOperationalFact type safety', () => {
     expect(fact.factType).toBe(OperationalFactType.OrderOpened);
   });
 
+  it('accepts GoodsReceived as line-level payload with document + line ids', () => {
+    const fact = parseOperationalFact({
+      factId: '10000000-0000-4000-8000-000000000010',
+      factType: OperationalFactType.GoodsReceived,
+      idempotencyKey: 'receipt-1:line-1',
+      occurredAt: '2026-08-19T10:00:00.000Z',
+      recordedAt: '2026-08-19T10:00:00.000Z',
+      position: { businessDate: '2026-08-19', businessOrder: 1 },
+      context: baseContext,
+      payload: {
+        stockItemId: '30000000-0000-4000-8000-000000000001',
+        supplierReceiptId: '30000000-0000-4000-8000-000000000002',
+        sourceDocumentLineId: '30000000-0000-4000-8000-000000000003',
+        acceptedBaseQuantity: { value: '6', unit: 'L', dimension: 'VOLUME' },
+        purchasePrice: { amountMinor: '10000', currencyCode: 'VND', minorUnitExponent: 0 },
+      },
+    });
+    expect(fact.factType).toBe(OperationalFactType.GoodsReceived);
+    expect(fact.payload).toMatchObject({
+      supplierReceiptId: '30000000-0000-4000-8000-000000000002',
+      sourceDocumentLineId: '30000000-0000-4000-8000-000000000003',
+    });
+  });
+
   it('rejects correct fact type + wrong payload shape', () => {
     expect(() =>
       parseOperationalFact({

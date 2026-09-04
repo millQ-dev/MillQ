@@ -24,9 +24,20 @@ const costPayload = z.object({
   minorUnitExponent: z.number().int().min(0).max(4),
 });
 
+/**
+ * GoodsReceived is a **line-level** operational fact (not one fact per document).
+ *
+ * - `supplierReceiptId` — business document id (group key for all lines of one POSTED receipt)
+ * - `sourceDocumentLineId` — stable goods_receipt_line identity (optional for older fixtures;
+ *   Block C always publishes it)
+ * - `stockItemId` + quantity + purchasePrice — that line's accepted inventory/cost payload
+ *
+ * Consumers MUST group by `supplierReceiptId`. N line facts ≠ N receipts.
+ */
 export const goodsReceivedPayloadSchema = z.object({
   stockItemId: z.string().uuid(),
   supplierReceiptId: z.string().uuid(),
+  sourceDocumentLineId: z.string().uuid().optional(),
   acceptedBaseQuantity: quantityPayload,
   purchasePrice: moneyPayload,
 });

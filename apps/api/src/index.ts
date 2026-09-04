@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import { loadEnv } from './config.js';
 import { createPool } from './db/pool.js';
 import { registerHealthRoutes } from './routes/health.js';
+import { registerGoodsReceiptRoutes } from './routes/goods-receipts.js';
 
 async function main() {
   const env = loadEnv();
@@ -17,11 +18,12 @@ async function main() {
   await app.register(cors, { origin: true });
 
   await registerHealthRoutes(app, pool);
+  await registerGoodsReceiptRoutes(app, pool);
 
   app.get('/', async () => ({
     name: 'MillQ API',
     layer: 'operational-core',
-    version: '0.0.0',
+    version: '0.1.0-block-c',
   }));
 
   const shutdown = async () => {

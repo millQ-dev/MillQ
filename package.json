@@ -12,6 +12,6 @@
     "dev:web": "pnpm --filter @millq/web run dev",
     "test": "pnpm -r run test",
     "lint": "pnpm -r run lint",
-    "typecheck": "pnpm -r run typecheck"
+    "typecheck": "pnpm --filter @millq/domain --filter @millq/contracts run build && pnpm -r run typecheck"
   }
 }
