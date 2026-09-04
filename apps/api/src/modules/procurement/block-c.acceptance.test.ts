@@ -385,7 +385,7 @@ describe('Block C Goods Receipt vertical (PostgreSQL)', () => {
     expect(mov.rows[0].c).toBe(0);
   });
 
-  it('SCENARIO 12 — operational fact mirror exactly one GoodsReceived for single-line post', async () => {
+  it('SCENARIO 12 — operational fact mirror: line-level facts, document group key', async () => {
     const draft = await service.createDraft(draftBase({ supplierDocumentNumber: 'FACT-1' }));
     await service.post(draft!.goodsReceiptId, {
       idempotencyKey: 'fact-post-1',
@@ -397,15 +397,51 @@ describe('Block C Goods Receipt vertical (PostgreSQL)', () => {
       OperationalFactType.GoodsReceived,
     ]);
     expect(facts.rowCount).toBe(1);
+    expect(facts.rows[0].payload.supplierReceiptId).toBe(draft!.goodsReceiptId);
+    expect(facts.rows[0].payload.sourceDocumentLineId).toBe(draft!.lines[0]!.goodsReceiptLineId);
 
     // Production Intelligence may READ facts; must not mutate Operational Core
-    const readOnly = await pool.query(
-      `SELECT fact_id, payload->>'supplierReceiptId' AS receipt_id FROM operational_fact_feed`,
-    );
-    expect(readOnly.rows[0].receipt_id).toBe(draft!.goodsReceiptId);
     const before = await service.getBalance(fx.legalEntityId, fx.warehouseId, fx.milkItemId);
-    // Intelligence-style read does not change stock
     expect(before.quantity).toBe('6');
+  });
+
+  it('multi-line POST → N line facts, one document (distinct supplierReceiptId)', async () => {
+    const draft = await service.createDraft(
+      draftBase({
+        supplierDocumentNumber: 'MULTI-1',
+        lines: [
+          milkLine(),
+          {
+            lineNumber: 2,
+            catalogItemId: fx.eggItemId,
+            supplierItemId: fx.eggSupplierItemId,
+            inputKind: 'COUNT',
+            packageCount: 24,
+            acceptedBaseQuantity: '24',
+            baseUnit: 'ea',
+            dimension: 'COUNT',
+            unitPriceMinor: '3000',
+            lineAcquisitionCostMinor: '72000',
+          },
+        ],
+      }),
+    );
+    await service.post(draft!.goodsReceiptId, { idempotencyKey: 'multi-post-1', actorId: fx.actorId });
+
+    const facts = await pool.query(
+      `SELECT payload->>'supplierReceiptId' AS doc_id, payload->>'sourceDocumentLineId' AS line_id
+       FROM operational_fact_feed WHERE fact_type = $1`,
+      [OperationalFactType.GoodsReceived],
+    );
+    expect(facts.rowCount).toBe(2);
+    expect(new Set(facts.rows.map((r) => r.doc_id)).size).toBe(1);
+    expect(facts.rows[0].doc_id).toBe(draft!.goodsReceiptId);
+    expect(new Set(facts.rows.map((r) => r.line_id)).size).toBe(2);
+
+    // Retry must not duplicate line facts
+    await service.post(draft!.goodsReceiptId, { idempotencyKey: 'multi-post-1', actorId: fx.actorId });
+    const afterRetry = await pool.query(`SELECT COUNT(*)::int AS c FROM operational_fact_feed`);
+    expect(afterRetry.rows[0].c).toBe(2);
   });
 
   it('reversal foundation creates compensating OUT and restores balance', async () => {

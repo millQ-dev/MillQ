@@ -35,11 +35,49 @@ Migration: `apps/api/migrations/002_block_c.sql`.
 
 POSTED economic fields cannot be silently edited (`PostedImmutableError`). Corrections create new history.
 
+## GoodsReceived operational fact granularity (strategic review)
+
+**Decision: line-level (A), not document-level.**
+
+Exact typed contract (`packages/contracts/src/operational-facts.ts` → `goodsReceivedPayloadSchema`):
+
+- required: `stockItemId`, `supplierReceiptId`, `acceptedBaseQuantity`, `purchasePrice`
+- optional (Block C always sets): `sourceDocumentLineId`
+
+That shape is a **single inventory line** (one stock item + accepted qty + unit purchase price), keyed to the parent document via `supplierReceiptId`. It is not a document aggregate payload.
+
+Publication rules:
+
+| Concern | Rule |
+| --- | --- |
+| Document id | Every fact carries `payload.supplierReceiptId` = `goods_receipt_id` |
+| Line identity | `payload.sourceDocumentLineId` = `goods_receipt_line_id` (stable UUID) |
+| Idempotency | `fact:{postIdempotencyKey}:line:{goodsReceiptLineId}` — retry does not duplicate line facts |
+| Grouping | Consumers group facts by `supplierReceiptId` into one business document |
+| Counting | N line facts ≠ N receipts; distinct `supplierReceiptId` = document count |
+| SoT | Module tables remain authoritative; feed is a mirror |
+
+Strict `factType` ↔ payload validation is unchanged (no generic JSON fallback).
+
 ## Costing / replay
 
-- Scope: `legal_entity + warehouse + catalog_item + currency` (warehouse-scoped stream per ADR-0003, with LegalEntity economic boundary on the receipt).
+**Warehouse is an Accepted costing boundary** — not an implementation invention.
+
+Exact Accepted statement — [ADR-0003](../decisions/ADR-0003-yield-preparations-moving-average-costing.md) §5 “Moving weighted average is warehouse scoped”:
+
+> The cost stream is scoped by:  
+> `warehouse + stockItem + valuationCurrency`
+
+Also ADR-0003 consequences checklist: “Moving weighted average per warehouse/item/valuation currency.”  
+Also ADR-0002 §4: “Every warehouse/item cost stream belongs to exactly one valuation currency.”
+
+Block C persistence keys balances as `(legal_entity_id, warehouse_id, catalog_item_id)`:
+
+- **Averaging dimension** remains warehouse + item + currency per ADR-0003 (no cross-warehouse average).
+- **LegalEntity** on the balance row is denormalized from warehouse ownership / Goods Receipt economic boundary (Architecture v1.2 / Block C ownership rules). It does not introduce a second averaging axis across LegalEntities.
+
 - No `product.cost`. Cost exposed via `CostQuote` (`FINAL` / `UNKNOWN`).
-- Posting and reversal **rebuild** balances by replaying movements ordered by `business_date`, `business_order` so late-entered receipts land correctly in business chronology.
+- Posting and reversal **rebuild** balances by replaying movements ordered by `business_date`, `business_order`.
 
 ## API (minimum)
 
@@ -56,7 +94,7 @@ POSTED economic fields cannot be silently edited (`PostedImmutableError`). Corre
 
 - Supplier pack multipack uses `units_per_package` × `unit_quantity` × received `packageCount`.
 - Line acquisition minor = `floor(unitPriceMinor × acceptedBaseQuantity)` for integer VND lines.
-- Fact mirror emits one `GoodsReceived` fact per receipt line; `catalogItemId` maps to contract field `stockItemId`.
+- `catalogItemId` maps to contract field `stockItemId`.
 
 ## Deferred / PO stop conditions (not invented)
 

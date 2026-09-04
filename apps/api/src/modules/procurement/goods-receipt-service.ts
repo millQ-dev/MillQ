@@ -566,7 +566,8 @@ export class GoodsReceiptService {
   ) {
     for (const line of existing.lines) {
       const factId = randomUUID();
-      const idempotencyKey = `fact:${cmd.idempotencyKey}:line:${line.lineNumber}`;
+      // Stable line identity (UUID), not mutable draft lineNumber
+      const idempotencyKey = `fact:${cmd.idempotencyKey}:line:${line.goodsReceiptLineId}`;
       const occurredAt = new Date().toISOString();
       const context = {
         businessGroupId: cmd.businessGroupId ?? existing.tenantId,
@@ -581,6 +582,7 @@ export class GoodsReceiptService {
       const payload = {
         stockItemId: line.catalogItemId,
         supplierReceiptId: existing.goodsReceiptId,
+        sourceDocumentLineId: line.goodsReceiptLineId,
         acceptedBaseQuantity: {
           value: line.acceptedBaseQuantity,
           unit: line.baseUnit,

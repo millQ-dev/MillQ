@@ -73,9 +73,11 @@ Also in scope as needed for the path:
 2. DRAFT → POSTED → REVERSED/CORRECTED; no silent edit after POSTED.
 3. Ledger quantities in **base units**; document keeps supplier pack facts.
 4. `operational_fact_feed` mirrors; Procurement/Inventory tables are SoT.
-5. Same idempotency key + same semantics → duplicate; mismatch → conflict.
-6. Do not invent Vietnam fiscal behavior.
-7. Do not introduce `product.cost`; valuation follows ADR-0003.
+5. `operational_fact_feed` mirrors; Procurement/Inventory tables are SoT.
+   - Typed `GoodsReceived` facts are **line-level** (see `goodsReceivedPayloadSchema`); group by `supplierReceiptId`. Details: [`block-c-implementation.md`](./block-c-implementation.md).
+6. Same idempotency key + same semantics → duplicate; mismatch → conflict.
+7. Do not invent Vietnam fiscal behavior.
+8. Do not introduce `product.cost`; valuation follows ADR-0003 (`warehouse + stockItem + valuationCurrency`).
 
 ## 6. Acceptance sketch (for Block C PR later)
 
