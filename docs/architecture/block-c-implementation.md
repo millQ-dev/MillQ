@@ -1,6 +1,6 @@
 # Block C Implementation — Goods Receipt / Inventory / Costing
 
-**Status:** Implemented on feature branch (awaiting independent strategic review)  
+**Status:** **Merged** on Origin `main` @ `a5e84b0` (PR #7)  
 **Contract:** [`block-c-goods-received-contract.md`](./block-c-goods-received-contract.md)  
 **ADRs:** ADR-0002, ADR-0003, ADR-0008, ADR-0009, ADR-0010 (Accepted)
 
