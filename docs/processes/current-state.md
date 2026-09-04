@@ -1,6 +1,6 @@
 # MillQ Current State
 
-**Checkpoint:** Architecture v1.2 alignment (docs) — branch `chore/architecture-v1.2`  
+**Checkpoint:** Architecture v1.2 alignment (docs) — branch `chore/architecture-v1.2` @ `4a7de73`  
 **Canonical Origin `main`:** `9e2b14a` (as of alignment start; update tip after merge)  
 **Canonical host:** Cursor Origin (`https://origin.cursor.com/millqdev/MillQ.git`)  
 **Backup host:** GitHub `https://github.com/millQ-dev/MillQ.git` (mirror only)  
