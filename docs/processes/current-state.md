@@ -1,54 +1,58 @@
 # MillQ Current State
 
-**Checkpoint:** Origin `main` @ `fee3e84` — **foundation merged** (2026-09-01)  
+**Checkpoint:** Architecture v1.2 alignment (docs) — branch `chore/architecture-v1.2` @ `4a7de73`  
+**Canonical Origin `main`:** `9e2b14a` (as of alignment start; update tip after merge)  
 **Canonical host:** Cursor Origin (`https://origin.cursor.com/millqdev/MillQ.git`)  
 **Backup host:** GitHub `https://github.com/millQ-dev/MillQ.git` (mirror only)  
-**Origin PR:** https://cursor.com/codebase/millqdev/MillQ/pull/1 — **merged**  
-**Updated:** 2026-09-01
+**Updated:** 2026-09-04
 
-## Foundation merge
+## Runtime / CI / backup
 
-Operational Core foundation merged to Origin `main` via PR #1 with **temporary CI exception** (see [`foundation-merge-ci-exception.md`](foundation-merge-ci-exception.md)).
-
-Merge gates used: local checks + strategic APPROVE WITH CONDITIONS + Origin ruleset.
-
-**Origin CI:** still **not attached** — must be attached before next serious application merge.
-
-**GitHub backup:** Origin `main` and Origin tags only, via `scripts/backup-origin-to-github.sh` as GitHub App **MillQ Origin Backup**. GitHub `main` may still lag until that job succeeds. Verify before treating GitHub as current.
+| Item | State |
+| --- | --- |
+| Foundation Operational Core | **Merged** (PR #1 → included in history before `9e2b14a`) |
+| Origin CI | **Attached** — Depot [`.depot/workflows/ci.yml`](../../.depot/workflows/ci.yml) is the merge-gate workflow |
+| GitHub Actions | Dormant copies only — not Origin merge gate |
+| GitHub backup | GitHub App **MillQ Origin Backup** via `scripts/backup-origin-to-github.sh` (verify lag independently) |
+| Temporary foundation CI exception | Historical only — closed by foundation merge + Depot attachment |
 
 ## Accepted decisions
 
 | ADR | Status | Topic |
 | --- | --- | --- |
-| ADR-0001 | Accepted | TypeScript monorepo, React, Node modular monolith, PostgreSQL |
-| ADR-0002 | Accepted | Money, quantity, units, rounding |
+| ADR-0001 | Accepted | Technology stack |
+| ADR-0002 | Accepted | Money, quantity, units |
 | ADR-0003 | Accepted | Yield, preparations, moving-average costing |
-| ADR-0004 | Accepted | Cursor Origin is source of truth; GitHub is backup |
+| ADR-0004 | Accepted | Origin SoT; GitHub backup |
 | ADR-0006 | Accepted | Production Intelligence boundary |
-| ADR-0007 | Accepted | Concrete foundation scaffolding stack |
+| ADR-0007 | Accepted | Foundation scaffolding |
+| ADR-0008 | Accepted | Domain Boundaries Architecture v1.2 |
+| ADR-0009 | Accepted | Catalog, Units, SupplierItem |
+| ADR-0010 | Accepted | Document posting & correction |
 
-## Still Proposed / separate review
+## Architecture baseline
 
-| Item | Status |
-| --- | --- |
-| Block B domain-boundary ADRs (draft branch) | Proposed — **not** Origin hosting ADR-0004 |
-| Block B questions B-01–B-18 | Open |
+- [`docs/architecture/architecture-v1.2.md`](../architecture/architecture-v1.2.md)
+- [`docs/architecture/domain-module-map.md`](../architecture/domain-module-map.md)
+- [`docs/architecture/block-c-goods-received-contract.md`](../architecture/block-c-goods-received-contract.md)
 
-## What exists on Origin main
+## What exists in code (unchanged by this alignment)
 
-- Runnable monorepo: `@millq/domain`, `@millq/contracts`, `@millq/api`, `@millq/web`
-- Architecture docs + ADR-0006/0007 + fact feed guardrail
-- Dormant GHA definition (backup-compatible, not Origin merge gate)
+- `@millq/domain`, `@millq/contracts`, `@millq/api`, `@millq/web`
+- PostgreSQL, Fastify, React/Vite, Vitest, plain SQL migrations
+- `operational_fact_feed` + recommendations schema placeholders
 
-## Not started
+## Explicitly not started
 
-- Block C (GoodsReceived / inventory vertical)
-- Block B acceptance
+- Block C implementation (GoodsReceived vertical) — **contract only**
+- Full Catalog / Menu / POS / Orders / Payments application modules
 
-## Next recommended sequence (Product Owner)
+## Next recommended sequence
 
-1. ~~Merge foundation~~ — **done** (`fee3e84`)
-2. Verify GitHub backup received Origin `main`
-3. **Block B** — accept domain-boundary ADRs
-4. Attach Origin CI before next application block
-5. **Block C** — only after Block B
+1. ~~Foundation merge~~ — done  
+2. ~~Origin CI (Depot)~~ — attached  
+3. **Merge Architecture v1.2 alignment** (this change)  
+4. **Block C** — GoodsReceived / Inventory vertical per contract  
+5. Later: Menu / Orders / Payments verticals; attach deeper product ADRs as needed  
+
+Former “must accept draft Block B ADRs before Block C” is superseded by Architecture v1.2 + ADR-0008…0010 for boundaries. Residual open product questions from old drafts may still be answered separately without blocking the Block C contract.

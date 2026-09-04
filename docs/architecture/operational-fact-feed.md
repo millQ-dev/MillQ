@@ -13,12 +13,10 @@ Table `operational_fact_feed` (migration `001_foundation.sql`) is an **immutable
 It is **not**:
 
 - a giant central ledger replacing module-owned records
-- the sole authoritative persistence for Purchasing, Inventory, Orders, Payments, Recipes, or Costing
-- a substitute for module-owned historical source tables
+- inventory ledger or sole authoritative persistence for Purchasing, Inventory, Orders, Payments, Recipes, or Costing
+- a generic event store or substitute for DOMAIN/AUDIT/INTEGRATION taxonomy in application design
 
 ## Architecture rule
-
-MillQ remains:
 
 ```text
 module-owned operational state / historical records
@@ -28,6 +26,10 @@ explicit immutable business facts where required
 optional derived/read-side fact feed (this table)
 ```
 
-Block C owns introducing real source tables and state transitions (e.g. GoodsReceived → inventory movement). The feed may mirror published facts after those commands succeed.
+Event classes (Architecture v1.2): **DOMAIN | AUDIT | INTEGRATION | TELEMETRY**. UI telemetry must not be treated as domain facts by default.
 
-See also: `historical-truth-model.md`, ADR-0006.
+## Block C
+
+Block C introduces real Procurement/Inventory source tables and posting. After a successful POST, the feed may **mirror** published facts. See [`block-c-goods-received-contract.md`](block-c-goods-received-contract.md) and ADR-0010.
+
+See also: `historical-truth-model.md`, ADR-0006, ADR-0008.
