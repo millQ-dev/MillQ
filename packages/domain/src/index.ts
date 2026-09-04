@@ -42,3 +42,16 @@ export {
   type YieldNormalizationInput,
   type YieldNormalizationResult,
 } from './yield.js';
+export {
+  applyPositiveInbound,
+  applyCompensatingOutbound,
+  deriveUnitCost,
+  emptyCostStream,
+  costQuoteFromStream,
+  lineAcquisitionCost,
+  compareBusinessPosition,
+  assertBusinessChronologyLess,
+  type CostCertainty,
+  type CostQuote,
+  type CostStreamState,
+} from './moving-average.js';
