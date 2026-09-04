@@ -1,20 +1,20 @@
 # MillQ Current State
 
-**Checkpoint:** Architecture v1.2 alignment (docs) — branch `chore/architecture-v1.2` @ `4a7de73`  
-**Canonical Origin `main`:** `9e2b14a` (as of alignment start; update tip after merge)  
+**Checkpoint:** Architecture v1.2 **merged** on Origin `main` @ `3036319` (2026-09-04)  
 **Canonical host:** Cursor Origin (`https://origin.cursor.com/millqdev/MillQ.git`)  
 **Backup host:** GitHub `https://github.com/millQ-dev/MillQ.git` (mirror only)  
+**Architecture PR:** https://cursor.com/codebase/millqdev/MillQ/pull/5 — **merged**  
 **Updated:** 2026-09-04
 
 ## Runtime / CI / backup
 
 | Item | State |
 | --- | --- |
-| Foundation Operational Core | **Merged** (PR #1 → included in history before `9e2b14a`) |
-| Origin CI | **Attached** — Depot [`.depot/workflows/ci.yml`](../../.depot/workflows/ci.yml) is the merge-gate workflow |
+| Foundation Operational Core | Merged (history before Architecture v1.2) |
+| Architecture v1.2 | **Merged** (PR #5 → `3036319`) |
+| Origin CI | **Attached** — Depot [`.depot/workflows/ci.yml`](../../.depot/workflows/ci.yml); PR #5 Depot checks green |
 | GitHub Actions | Dormant copies only — not Origin merge gate |
 | GitHub backup | GitHub App **MillQ Origin Backup** via `scripts/backup-origin-to-github.sh` (verify lag independently) |
-| Temporary foundation CI exception | Historical only — closed by foundation merge + Depot attachment |
 
 ## Accepted decisions
 
@@ -36,7 +36,7 @@
 - [`docs/architecture/domain-module-map.md`](../architecture/domain-module-map.md)
 - [`docs/architecture/block-c-goods-received-contract.md`](../architecture/block-c-goods-received-contract.md)
 
-## What exists in code (unchanged by this alignment)
+## What exists in code
 
 - `@millq/domain`, `@millq/contracts`, `@millq/api`, `@millq/web`
 - PostgreSQL, Fastify, React/Vite, Vitest, plain SQL migrations
@@ -44,15 +44,13 @@
 
 ## Explicitly not started
 
-- Block C implementation (GoodsReceived vertical) — **contract only**
+- **Block C implementation** (GoodsReceived vertical) — contract ready
 - Full Catalog / Menu / POS / Orders / Payments application modules
 
 ## Next recommended sequence
 
-1. ~~Foundation merge~~ — done  
-2. ~~Origin CI (Depot)~~ — attached  
-3. **Merge Architecture v1.2 alignment** (this change)  
+1. ~~Foundation~~ done  
+2. ~~Origin CI (Depot)~~ attached  
+3. ~~Architecture v1.2~~ **done** (`3036319`)  
 4. **Block C** — GoodsReceived / Inventory vertical per contract  
-5. Later: Menu / Orders / Payments verticals; attach deeper product ADRs as needed  
-
-Former “must accept draft Block B ADRs before Block C” is superseded by Architecture v1.2 + ADR-0008…0010 for boundaries. Residual open product questions from old drafts may still be answered separately without blocking the Block C contract.
+5. Later Menu / Orders / Payments verticals  
