@@ -1,8 +1,9 @@
 # Offline Operation Foundation
 
-- **Status:** Foundation reference
+- **Status:** Foundation reference (Architecture v1.2 aware)
 - **Date:** 2026-08-19
-- **Related:** ADR-0001, ADR-0003, PROJECT_CHARTER.md
+- **Updated:** 2026-09-04
+- **Related:** ADR-0001, ADR-0003, ADR-0008, PROJECT_CHARTER.md
 
 ## 1. Requirement
 
@@ -20,9 +21,11 @@ These must work on the device without server connectivity:
 | Add lines, modifiers | Same |
 | Apply known menu/prices | From last synced catalog/menu/pricing snapshot |
 | Record payment (cash) | Queue payment fact |
-| Kitchen ticket display | From local order state |
+| Kitchen ticket display | From local order state; routing snapshot from last sync |
 | Inventory write-off trigger | Queue command; valuation may be provisional offline |
-| Employee sign-in | Last-known credential/session policy (Block D) |
+| Employee sign-in | Last-known credential/session policy (deferred) |
+
+Orders must work **without** a table assignment (takeaway / corner / delivery).
 
 Cannot guarantee without sync:
 
@@ -100,9 +103,13 @@ After reconnect:
 - Sync batch ID links device upload to server ingestion run
 - Dangerous offline operations flagged in Audit & Risk if policy requires
 
-## 10. Deferred
+## 10. Events and outbox (Architecture v1.2)
 
-- Exact sync protocol (REST batch vs streaming — Block F)
+Offline sync uses **DOMAIN** (and necessary AUDIT) command/facts — not UI TELEMETRY. Prefer a transactional outbox for durable sync/integration side effects; do not use outbox for every internal method call.
+
+## 11. Deferred
+
+- Exact sync protocol (REST batch vs streaming)
 - CRDT vs last-write-wins for specific entities
 - Fiscal offline queue behavior (Vietnam)
 - Full encryption at rest on device

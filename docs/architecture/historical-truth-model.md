@@ -1,8 +1,9 @@
 # Historical Truth Model
 
-- **Status:** Foundation reference
+- **Status:** Foundation reference (aligned with Architecture v1.2 / ADR-0010)
 - **Date:** 2026-08-19
-- **Related:** ADR-0002, ADR-0003, Operational Core model
+- **Updated:** 2026-09-04
+- **Related:** ADR-0002, ADR-0003, ADR-0010, Operational Core model, [`architecture-v1.2.md`](architecture-v1.2.md)
 
 ## 1. Goal
 
@@ -88,7 +89,25 @@ Per module, within PostgreSQL:
 
 Cross-module integrity: single database transaction where a command spans modules; each module writes only its tables.
 
-Foundation migration `001_foundation.sql` creates only the feed + recommendations schema placeholders. Block C owns real Purchasing/Inventory/Orders source tables.
+Foundation migration `001_foundation.sql` creates only the feed + recommendations schema placeholders. Block C introduces Procurement/Inventory source tables per [`block-c-goods-received-contract.md`](block-c-goods-received-contract.md).
+
+## 7.1 Document posting and correction (ADR-0010)
+
+Financially / inventory-significant documents use:
+
+```text
+DRAFT → POSTED → REVERSED / CORRECTED
+```
+
+- **Typed documents** (GoodsReceipt, StockAdjustment, …) ≠ **InventoryMovement** lines.
+- Stock balance is a **projection** of movements; systems must be able to explain a balance via the movement/document chain.
+- After POSTED: no silent mutation; correction via reversal/compensating operations with audit.
+- Posting is transactional with the movements (and optional feed mirror) it produces.
+- Keep distinct clocks: `createdAt`, `recordedAt`, `documentDate`, `businessDate` / `businessTime?` / `businessOrder`, `effectiveAt`, `postedAt`.
+
+## 7.2 Cost semantics (no `product.cost`)
+
+Do not store a universal product cost field. Distinguish supplier price, inventory unit valuation, theoretical recipe cost, expected/actual COGS, sale price, margins — with certainty/status from ADR-0003 (`FINAL`, `ESTIMATED_FROM_LAST_KNOWN`, `UNKNOWN`, `ORDER_UNRESOLVED`). Conceptual `CostQuote` carries basis and confidence.
 
 ## 8. Production Intelligence consumption
 
@@ -101,7 +120,8 @@ Recommendations reference evidence fact IDs and revision IDs for explainability.
 
 ## 9. Deferred to later blocks
 
-- Exact table schemas (Block C)
-- Correction/reversal state machines (Block C)
-- Offline conflict resolution details (Block F)
+- Exact table schemas (Block C+)
+- Full correction UX state machines (Block C+)
+- Offline conflict resolution details
 - Period-close rules (Product Owner + accounting verification)
+- Inventory count session UX (blind count)

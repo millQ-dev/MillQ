@@ -42,12 +42,15 @@ Classify the change as Level A, B, or C before editing (see `docs/processes/auto
 
 - Prefer a modular monolith first.
 - Keep work within the monorepo structure.
-- Preserve domain boundaries and ownership.
+- Preserve domain boundaries and ownership (Architecture v1.2 / ADR-0008).
+- Catalog ≠ Menu Configuration ≠ POS Presentation ≠ Channel Menu.
+- Inventory documents ≠ inventory movements; posting is DRAFT→POSTED→REVERSED/CORRECTED (ADR-0010).
 - Critical inventory and financial operations require transactional integrity.
 - Retried critical operations must be idempotent.
 - Inventory and financial events must remain auditable.
 - Significant architecture decisions require an ADR.
 - Avoid premature abstraction.
+- Do not treat `operational_fact_feed` as a central business ledger.
 
 Do not select frameworks or languages unless an approved decision already exists.
 
