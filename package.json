@@ -13,5 +13,8 @@
     "test": "pnpm -r run test",
     "lint": "pnpm -r run lint",
     "typecheck": "pnpm -r run typecheck"
+  },
+  "devDependencies": {
+    "@astryxdesign/cli": "^0.6.0"
   }
 }
