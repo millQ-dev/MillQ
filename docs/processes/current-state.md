@@ -1,8 +1,9 @@
 # MillQ Current State
 
-**Checkpoint:** Block D1.1 Recipes & Preparations foundation **Merged** — Origin `main` @ `3ff79a2` (2026-09-12)  
+**Checkpoint:** Block D1.2A ProductionBatch domain foundation **Merged** — Origin `main` @ `4546dbe` (2026-09-12)  
 **Canonical host:** Cursor Origin (`https://origin.cursor.com/millqdev/MillQ.git`)  
 **Backup host:** GitHub `https://github.com/millQ-dev/MillQ.git` (mirror only)  
+**Block D1.2A PR #27:** merged @ `4546dbe` (tip before merge `ee59f39`)  
 **Block D1.1 PR #25:** merged @ `3ff79a2` (tip before merge `3c7c84a`)  
 **Accept PR #23:** ADR-0022 / ADR-0023 / ADR-0024 @ `3590147`  
 **Accept PR #21:** ADR-0011 @ `cf5398a`  
@@ -30,7 +31,7 @@
 | ADR-0011 | **Accepted** (PR #21 → `cf5398a`) |
 | ADR-0022 / ADR-0023 / ADR-0024 | **Accepted** (PR #23 → `3590147`) |
 | Block D1.1 Recipes & Preparations foundation | **Merged** (PR #25 → `3ff79a2`; no ProductionBatch / sale write-off) |
-| Block D1.2A ProductionBatch domain foundation | **In review** (DRAFT→FINALIZED facts; **no** inventory posting — D1.2B) |
+| Block D1.2A ProductionBatch domain foundation | **Merged** (PR #27 → `4546dbe`; FINALIZED facts; **no** inventory posting) |
 | New application verticals beyond D1.2A (incl. D1.2B) | **STOP** until PO launches next slice |
 | Origin CI | **Attached** — Depot |
 | GitHub Actions | Dormant copies only |
@@ -101,7 +102,7 @@ Structured Effective Recipe resolution; `UNKNOWN` never silently SAFE; AI/voice 
 
 - Block C: Goods Receipt → movements → balance → CostQuote → GoodsReceived fact mirror
 - Block D1.1 **Merged**: RecipeSpecification / RecipeVersion / PreparationSpecification with VIRTUAL|STOCK_TRACKED, nested graph validation, normative yield — **no** ProductionBatch / sale write-off
-- Block D1.2A (this PR): ProductionBatch DRAFT→FINALIZED with pinned PreparationVersion, normative vs actual I/O/yield, deviation classification — **no** inventory movements / costing
+- Block D1.2A **Merged**: ProductionBatch DRAFT→FINALIZED with pinned PreparationVersion, normative vs actual I/O/yield, deviation classification — **no** inventory movements / costing
 - No Migration adapters, fiscal providers, POS/FloorPlan, Grab/Shopee, ModelGateway, ASR/TTS, or GPU runtime
 - No Professional Account / Workforce recruiting / Allergen Resolver application code
 
@@ -124,7 +125,7 @@ Structured Effective Recipe resolution; `UNKNOWN` never silently SAFE; AI/voice 
 2. ~~Architecture v1.3 alignment~~ merged  
 3. ~~ADR-0011…0024~~ **Accepted**  
 4. ~~Block D1.1 Recipes & Preparations foundation~~ **Merged** (PR #25 → `3ff79a2`)  
-5. Block D1.2A ProductionBatch domain foundation — **await handoff review #1 / merge**  
+5. ~~Block D1.2A ProductionBatch domain foundation~~ **Merged** (PR #27 → `4546dbe`)  
 6. Further application slices (incl. **D1.2B**) remain **STOP** until PO launch  
-7. Review policy: standard handoff review #1 (full-diff only if ambiguity / scope / CI suspicion)  
+7. Review policy: next substantive PR uses standard handoff review (full-diff if ambiguity / scope / CI suspicion)  
 
