@@ -4,7 +4,7 @@
 - **Date:** 2026-08-19
 - **Accepted:** 2026-08-30
 - **Decision owners:** Product Owner and System Architect
-- **Related:** [`operational-core-and-intelligence.md`](../architecture/operational-core-and-intelligence.md), [`domain-module-map.md`](../architecture/domain-module-map.md)
+- **Related:** [`operational-core-and-intelligence.md`](../architecture/operational-core-and-intelligence.md), [`domain-module-map.md`](../architecture/domain-module-map.md), [ADR-0020](ADR-0020-intelligence-execution-model-gateway.md) (execution / ModelGateway — does **not** supersede this ADR)
 
 ## Context
 

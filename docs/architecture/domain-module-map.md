@@ -1,10 +1,10 @@
-# Domain Module Map (Architecture v1.2)
+# Domain Module Map (Architecture v1.3)
 
-- **Status:** Accepted reference (Architecture v1.2)
+- **Status:** Proposed reference with Architecture v1.3
 - **Date:** 2026-09-04
-- **Supersedes:** provisional Block B–aligned map (2026-08) for boundary naming
-- **Authority:** [ADR-0008](../decisions/ADR-0008-domain-boundaries-v1.2.md), [`architecture-v1.2.md`](architecture-v1.2.md)
-- **Note:** Origin hosting ADR-0004 is unrelated. Old draft “Block B ADR-0004/0005” names on a draft branch are **not** Accepted MillQ ADRs.
+- **Supersedes:** Architecture v1.2 module map naming for extended modules
+- **Authority:** [`architecture-v1.3.md`](architecture-v1.3.md), ADR-0008 (Accepted), ADR-0020/0021 (Accepted), ADR-0011…0019 (Proposed)
+- **Note:** Origin hosting ADR-0004 is unrelated.
 
 Each row is an internal module boundary inside the **modular monolith**.
 
@@ -114,23 +114,23 @@ Costing writes **only derived revisions**, never invents inventory movements (AD
 
 | | |
 | --- | --- |
-| **Owns** | Order, OrderLine, modifiers on lines, commercial snapshots, lifecycle; optional TableAssignment |
-| **Does not own** | Payments, kitchen ticket state, inventory movements |
-| **Key concepts** | Order (table optional), OrderLine snapshot (product, variant, recipe version, price, modifiers) |
-| **Commands in** | OpenOrder, AddLine, CancelOrder, SendToProduction |
+| **Owns** | Order, OrderLine, modifiers on lines, commercial snapshots, lifecycle; optional TableAssignment; SettlementGroup / Check / CheckLineAllocation coordination |
+| **Does not own** | Payments, FiscalDocument, kitchen ticket state, inventory movements, FloorPlan geometry |
+| **Key concepts** | Order (table optional), OrderLine snapshot, SettlementGroup, Check (ADR-0016) |
+| **Commands in** | OpenOrder, AddLine, CancelOrder, SendToProduction, OpenSettlement, SplitCheck |
 | **Facts out** | OrderOpened, OrderItemAdded, OrderCancelled, OrderPaid (signal; payment owned by Payments) |
-| **Depends on** | Menu/Pricing resolvers, Catalog, Organization, Identity |
+| **Depends on** | Menu/Pricing resolvers, Catalog, Organization, Identity, Floor/Table (optional refs) |
 
 ### Payments
 
 | | |
 | --- | --- |
-| **Owns** | Payment/refund transactions; TenderDefinition registry |
-| **Does not own** | Order lines, cash drawer sessions |
-| **Key concepts** | TenderDefinition (category, provider, settlement, fiscal mapping, policies), Payment |
-| **Commands in** | RecordPayment, RecordRefund |
+| **Owns** | Payment/refund transactions; TenderDefinition registry; PaymentAllocation |
+| **Does not own** | Order lines, cash drawer sessions, merchant/customer fund custody (forbidden — ADR-0013) |
+| **Key concepts** | TenderDefinition, Payment, PaymentAllocation, non-custody boundary |
+| **Commands in** | RecordPayment, RecordRefund, AllocatePayment |
 | **Facts out** | PaymentRecorded |
-| **Depends on** | Orders, Organization |
+| **Depends on** | Orders (settlement), Organization |
 
 ### Cash Management
 
@@ -191,21 +191,92 @@ Costing writes **only derived revisions**, never invents inventory movements (AD
 
 | | |
 | --- | --- |
-| **Owns** | Jurisdiction fiscal adapters, submission records, fiscal mapping config |
-| **Does not own** | LegalEntity master data beyond fiscal binding |
-| **Key concepts** | FiscalDocument, Adapter |
-| **Commands in** | SubmitFiscal (jurisdiction-specific; Vietnam deferred research) |
-| **Facts out** | FiscalSubmitted |
-| **Depends on** | Organization (LegalEntity), Payments/Orders |
+| **Owns** | FiscalPolicy, FiscalSeries, FiscalDocument, FiscalSubmission, correction chains, provider adapter **interface**, fiscal reconciliation |
+| **Does not own** | LegalEntity master data beyond fiscal binding; Order/Payment SoT; legal production clearance |
+| **Key concepts** | Architecture boundary now; provider impl later; LEGAL GATE G2 for go-live (ADR-0014) |
+| **Commands in** | SubmitFiscal, RecordFiscalCorrection |
+| **Facts out** | FiscalSubmitted, FiscalCorrected |
+| **Depends on** | Organization (LegalEntity), JurisdictionProfile, Payments/Orders settlement outcomes |
+
+### Floor / Table Engine
+
+| | |
+| --- | --- |
+| **Owns** | DiningArea, FloorPlanVersion, Table, TableLayoutObject, TableRuntimeState, TableCombination |
+| **Does not own** | Order content (Orders hold optional TableAssignment) |
+| **Key concepts** | Optional capability `tables.enabled` (ADR-0017) |
+| **Commands in** | PublishFloorPlan, UpdateTableRuntimeState, CombineTables |
+| **Facts out** | FloorPlanPublished, TableStateChanged |
+| **Depends on** | Organization, PackageEntitlement / OutletCapabilityConfig |
+
+### Migration
+
+| | |
+| --- | --- |
+| **Owns** | MigrationJob, staging store, canonical import model versions, external identity map, dry-run/reconcile reports |
+| **Does not own** | Authoritative Catalog/Inventory/Order ledgers (writes only via Core commands) |
+| **Key concepts** | Source Adapter, Staging, Canonical*, mapping, historical A/B/C modes (ADR-0011) |
+| **Commands in** | StartMigrationJob, RunDryRun, ApplyImportPlan |
+| **Facts out** | MigrationJobCompleted (AUDIT/INTEGRATION as applicable) |
+| **Depends on** | Organization, Catalog, Inventory, Privacy Control Plane (ADR-0015) |
+
+### Privacy & Security Control Plane
+
+| | |
+| --- | --- |
+| **Owns** | PII Vault access policies, EgressGate decisions, GovernmentRequestCase |
+| **Does not own** | Business aggregates |
+| **Key concepts** | Vietnam-primary residency intent; synthetic-data-only until gates clear (ADR-0015) |
+| **Commands in** | ApproveEgress, OpenGovernmentRequestCase |
+| **Facts out** | AUDIT events |
+| **Depends on** | Identity, Organization |
 
 ### Reporting
 
 | | |
 | --- | --- |
-| **Owns** | Read models, aggregates, report definitions |
+| **Owns** | Read models, aggregates, report definitions; ContributionMargin / ChannelProfit projections (ADR-0019) |
 | **Does not own** | Source ledgers |
-| **Key concepts** | Projection, KpiSnapshot |
+| **Key concepts** | Projection, KpiSnapshot, Action Center / Compliance Center read-sides |
 | **Depends on** | Fact feed, module facts (read) |
+
+### Production Intelligence (supporting — ADR-0006 + ADR-0020)
+
+| | |
+| --- | --- |
+| **Owns** | Recommendations, detector/forecast artifacts, EvidenceBundle assembly, ModelGateway **contract** usage, ApprovedModelRegistry **contract** |
+| **Does not own** | Orders, Inventory, Payments, Purchasing, or any Operational Core ledger |
+| **Key concepts** | Tenant-scoped projections → EvidenceBuilder → ModelGateway → Recommendation → human accept → **normal domain command** |
+| **Commands in** | GenerateRecommendation (read-side), RecordRecommendationDecision (accept/reject metadata) |
+| **Facts out** | RecommendationIssued, RecommendationAccepted/Rejected (AUDIT / DOMAIN as applicable) |
+| **Depends on** | Reporting projections, Privacy/Egress (ADR-0015), Operational Core (**read only**) |
+
+```text
+Operational Core
+  → Intelligence projections / EvidenceBuilder
+  → ModelGateway
+```
+
+No new deployable/microservice required by this map row.
+
+### Voice & Multilingual Interaction (supporting — ADR-0021)
+
+| | |
+| --- | --- |
+| **Owns** | Voice interaction sessions (when implemented), speech provider adapter **interface**, translation/preview orchestration |
+| **Does not own** | Order/Inventory/Payment ledgers; AuthorizationPolicy |
+| **Key concepts** | PTT/VAD → server ASR → router → classes A Informational / B Translation / C Command preview / D Critical command |
+| **Commands in** | StartVoiceCapture, SubmitVoiceUtterance, ConfirmVoiceCommandPreview (C/D only mutate via normal app commands) |
+| **Facts out** | VoiceInteractionRecorded (AUDIT as applicable) |
+| **Depends on** | ModelGateway / SpeechProviderAdapter (ADR-0020), Identity/RBAC, Catalog/Menu resolvers, application commands |
+
+```text
+Voice & Multilingual Interaction
+  → ModelGateway / SpeechProviderAdapter
+  → existing application commands
+```
+
+Voice and Intelligence remain **supporting / read-side** capabilities, not owners of Orders/Inventory/Payments truth.
 
 ---
 
@@ -221,8 +292,11 @@ Costing writes **only derived revisions**, never invents inventory movements (AD
 | **Promotions** | PromotionRule, StackingPolicy | ≠ PriceRule |
 | **Loyalty** | LoyaltyRule | ≠ Promotion |
 | **Delivery** | Fulfillment tasks | |
+| **Migration** | See dedicated Migration module above | ADR-0011 |
 | **Central Production** | Multi-outlet production plans | |
-| **Operational / Production Intelligence** | Recommendations, EvidenceBundle | ADR-0006 |
+| **Operational / Production Intelligence** | Recommendations, EvidenceBundle, ModelGateway contract | ADR-0006 + ADR-0020 |
+| **Voice & Multilingual Interaction** | Speech/translation UX path | ADR-0021 |
+| **Jurisdiction** | JurisdictionProfile versions | ADR-0012 |
 
 **Procurement** is the purchasing vertical for Block C (GoodsReceipt). Named distinctly from Supplier Management master data.
 
@@ -241,10 +315,13 @@ Procurement ──posts──► Inventory
         ↓
 Orders → Production Routing, Payments, Cash Management, Delivery
         ↓
-Reporting, Production Intelligence (read-only + recommendations)
+Reporting
+        ↓
+Production Intelligence (projections / EvidenceBuilder → ModelGateway)   [supporting]
+Voice & Multilingual Interaction → ModelGateway / SpeechAdapter → commands [supporting]
 ```
 
-Audit observes all. Integrations and Fiscalization at the edge.
+Audit observes all. Integrations and Fiscalization at the edge. Intelligence and Voice **do not** own Core ledgers.
 
 ---
 

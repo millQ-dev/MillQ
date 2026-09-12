@@ -1,15 +1,15 @@
 # Offline Operation Foundation
 
-- **Status:** Foundation reference (Architecture v1.2 aware)
+- **Status:** Foundation reference (Architecture v1.3 aware)
 - **Date:** 2026-08-19
 - **Updated:** 2026-09-04
-- **Related:** ADR-0001, ADR-0003, ADR-0008, PROJECT_CHARTER.md
+- **Related:** ADR-0001, ADR-0003, ADR-0008, ADR-0018 (Proposed multi-platform runtime), PROJECT_CHARTER.md
 
 ## 1. Requirement
 
 POS operation must survive unstable or no internet connectivity. Offline is first-class, not an afterthought.
 
-Vietnam-specific fiscal behavior (official receipt, e-invoice) is **jurisdiction-dependent and deferred** — see Fiscalization module and dedicated Vietnam research.
+Vietnam fiscal **architecture boundary** is fixed in ADR-0014; concrete provider adapters and legal production clearance are later / LEGAL GATE. Offline must not invent successful government fiscal acceptance.
 
 ## 2. Local-first operational actions
 
