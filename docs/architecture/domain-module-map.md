@@ -3,7 +3,7 @@
 - **Status:** Proposed reference with Architecture v1.3
 - **Date:** 2026-09-04
 - **Supersedes:** Architecture v1.2 module map naming for extended modules
-- **Authority:** [`architecture-v1.3.md`](architecture-v1.3.md), ADR-0008 (Accepted), ADR-0012/0013/0020/0021 (Accepted), ADR-0011, 0014…0019 (Proposed)
+- **Authority:** [`architecture-v1.3.md`](architecture-v1.3.md), ADR-0008 (Accepted), ADR-0012/0013/0015/0019/0020/0021 (Accepted), ADR-0011, 0014, 0016…0018 (Proposed)
 - **Note:** Origin hosting ADR-0004 is unrelated.
 
 Each row is an internal module boundary inside the **modular monolith**.
@@ -224,9 +224,9 @@ Costing writes **only derived revisions**, never invents inventory movements (AD
 
 | | |
 | --- | --- |
-| **Owns** | PII Vault access policies, EgressGate decisions, GovernmentRequestCase |
-| **Does not own** | Business aggregates |
-| **Key concepts** | Vietnam-primary residency intent; synthetic-data-only until gates clear (ADR-0015) |
+| **Owns** | PII Vault access policies (logical boundary), EgressGate decisions, GovernmentRequestCase; support/break-glass audit plane (distinct) |
+| **Does not own** | Business aggregates; Professional Account detailed model (ADR PENDING); Workforce/Assessment media policy (ADR PENDING) |
+| **Key concepts** | Tenant isolation; exceptional professional cross-BG grants; Vietnam-primary preferred residency; attributable Egress Gate (ADR-0015 **Accepted**) |
 | **Commands in** | ApproveEgress, OpenGovernmentRequestCase |
 | **Facts out** | AUDIT events |
 | **Depends on** | Identity, Organization |
@@ -235,9 +235,9 @@ Costing writes **only derived revisions**, never invents inventory movements (AD
 
 | | |
 | --- | --- |
-| **Owns** | Read models, aggregates, report definitions; ContributionMargin / ChannelProfit projections (ADR-0019) |
-| **Does not own** | Source ledgers |
-| **Key concepts** | Projection, KpiSnapshot, Action Center / Compliance Center read-sides |
+| **Owns** | Read models, aggregates, report definitions; ContributionMargin / ChannelProfit projections (ADR-0019 **Accepted**) |
+| **Does not own** | Source ledgers; separate economic SoT per persona |
+| **Key concepts** | Metric ladder (Gross Sales → … → Contribution Margin); typed Direct Variable Costs; certainty/provenance; original currency; Owner/Accountant views over same facts |
 | **Depends on** | Fact feed, module facts (read) |
 
 ### Production Intelligence (supporting — ADR-0006 + ADR-0020)
