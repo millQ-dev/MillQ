@@ -81,9 +81,9 @@ LegalEntity is fiscal/legal — **not** part of menu inheritance.
 | --- | --- |
 | **Owns** | RecipeVersion graph, RecipeLine, RecipeVariantBinding, Preparation specs, materialization mode; **derived** cost revisions / CostQuote artifacts |
 | **Does not own** | ProductionBatch stock effects (Inventory), sale prices; Allergen resolution results (Allergen Resolver consumes this graph — ADR-0024) |
-| **Key concepts** | RecipeVersion, RecipeGraphResolver (future), Effective Recipe (for modifiers), EXPLODE_RECIPE_ON_SALE / CONSUME_FINISHED_ITEM, CostQuote |
-| **Commands in** | ActivateRecipeVersion, RecalculateCost (derived) |
-| **Facts out** | RecipeVersionActivated, CostRevisionRecorded |
+| **Key concepts** | RecipeSpecification, RecipeVersion, RecipeLine/component; PreparationSpecification + VIRTUAL/STOCK_TRACKED; normative yield; acyclic nested graph (D1.1); RecipeGraphResolver (future), Effective Recipe (for modifiers), CostQuote |
+| **Commands in** | CreateRecipeDraft, PublishRecipeVersion, CreatePreparationDraft, PublishPreparationVersion, ActivateRecipeVersion (future), RecalculateCost (derived, future) |
+| **Facts out** | RecipeVersionActivated (future publish mirror), CostRevisionRecorded (future) |
 | **Depends on** | Catalog, Units, Inventory facts (read for valuation) |
 
 Costing writes **only derived revisions**, never invents inventory movements (ADR-0003, ADR-0006).
