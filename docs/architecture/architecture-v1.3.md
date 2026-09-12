@@ -28,9 +28,11 @@ Architecture v1.3 baseline for resumed implementation
 
 | Item | State |
 | --- | --- |
-| Origin main | `77c6949` (PR #9 merge) |
+| Origin main tip | `cf3375f` (ADR-0012/0013 Accept PR #11) |
+| Architecture v1.3 merge | `77c6949` (PR #9) |
 | Block C | **Merged** (PR #7 → `a5e84b0`) and **v1.3-compatible** |
 | Architecture v1.3 alignment | **Merged** (PR #9 → `77c6949`) |
+| ADR-0012 / ADR-0013 | **Accepted** (PR #11 → `cf3375f`) |
 | New application verticals | **STOP** until PO launches next vertical |
 
 **Do not** describe Block C as the next vertical. After acceptance, the current candidate is:
@@ -50,8 +52,8 @@ Modular monolith; TypeScript monorepo; Origin SoT; ADR-0002/0003 measurement & c
 | Contour | Decision pointer |
 | --- | --- |
 | Migration Core + Canonical + Mapping + Historical policy | ADR-0011 |
-| JurisdictionProfile ≠ provider adapters | ADR-0012 |
-| Payment non-custody (no merchant/customer funds) | ADR-0013 |
+| JurisdictionProfile ≠ provider adapters | ADR-0012 (**Accepted**) |
+| Payment non-custody (no merchant/customer funds) | ADR-0013 (**Accepted**) |
 | Vietnam fiscalization architecture boundary now | ADR-0014 |
 | PII Vault, VN-primary residency, egress gate, MillQ LLC boundary | ADR-0015 |
 | Order Settlement / Split Bill | ADR-0016 |
@@ -96,6 +98,8 @@ Order
 ```
 
 Supports: split by lines, by guests, mixed tender, partial payment, fiscal interaction per Check/FiscalDocument rules (ADR-0014).
+
+**Forward constraint (ADR-0013 Accepted → future ADR-0016):** a recorded external deposit/prepayment must **not** become a MillQ custodial balance or wallet. ADR-0016 remains Proposed.
 
 See ADR-0016.
 
