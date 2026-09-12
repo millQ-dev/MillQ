@@ -3,7 +3,7 @@
 - **Status:** Proposed reference with Architecture v1.3
 - **Date:** 2026-09-04
 - **Supersedes:** Architecture v1.2 module map naming for extended modules
-- **Authority:** [`architecture-v1.3.md`](architecture-v1.3.md), ADR-0008 (Accepted), ADR-0012…0021 (Accepted), ADR-0011 (Proposed)
+- **Authority:** [`architecture-v1.3.md`](architecture-v1.3.md), ADR-0008 (Accepted), ADR-0011…0021 (Accepted)
 - **Note:** Origin hosting ADR-0004 is unrelated.
 
 Each row is an internal module boundary inside the **modular monolith**.
@@ -213,12 +213,12 @@ Costing writes **only derived revisions**, never invents inventory movements (AD
 
 | | |
 | --- | --- |
-| **Owns** | MigrationJob, staging store, canonical import model versions, external identity map, dry-run/reconcile reports |
+| **Owns** | MigrationRun / MigrationJob, staging store, canonical import model versions, external identity map, dry-run / reconcile reports |
 | **Does not own** | Authoritative Catalog/Inventory/Order ledgers (writes only via Core commands) |
-| **Key concepts** | Source Adapter, Staging, Canonical*, mapping, historical A/B/C modes (ADR-0011) |
-| **Commands in** | StartMigrationJob, RunDryRun, ApplyImportPlan |
-| **Facts out** | MigrationJobCompleted (AUDIT/INTEGRATION as applicable) |
-| **Depends on** | Organization, Catalog, Inventory, Privacy Control Plane (ADR-0015) |
+| **Key concepts** | Pipeline Adapter→…→Audit; modes A Master Data / B Opening·Cutover / C Historical; provenance; idempotent apply; cutover lifecycle; ADR-0011 **Accepted**; ADR-0015 privacy |
+| **Commands in** | StartMigrationRun, RunDryRun, ApplyImportPlan, CompleteReconciliation |
+| **Facts out** | MigrationRunPhaseChanged, MigrationJobCompleted, MigrationConflictRaised (AUDIT/INTEGRATION as applicable) |
+| **Depends on** | Organization (explicit target scope), Catalog, Inventory, Recipes (via Core commands), Privacy Control Plane (ADR-0015) |
 
 ### Privacy & Security Control Plane
 
@@ -292,7 +292,7 @@ Voice and Intelligence remain **supporting / read-side** capabilities, not owner
 | **Promotions** | PromotionRule, StackingPolicy | ≠ PriceRule |
 | **Loyalty** | LoyaltyRule | ≠ Promotion |
 | **Delivery** | Fulfillment tasks | |
-| **Migration** | See dedicated Migration module above | ADR-0011 |
+| **Migration** | See dedicated Migration module above | ADR-0011 **Accepted** |
 | **Central Production** | Multi-outlet production plans | |
 | **Operational / Production Intelligence** | Recommendations, EvidenceBundle, ModelGateway contract | ADR-0006 + ADR-0020 |
 | **Voice & Multilingual Interaction** | Speech/translation UX path | ADR-0021 |

@@ -1,15 +1,15 @@
 # MillQ Current State
 
-**Checkpoint:** ADR-0017 **Accepted** — Origin `main` @ `1f683dc` (2026-09-12)  
+**Checkpoint:** ADR-0017 **Accepted** — Origin `main` tip after checkpoint @ `f944df0` (2026-09-12)  
 **Canonical host:** Cursor Origin (`https://origin.cursor.com/millqdev/MillQ.git`)  
 **Backup host:** GitHub `https://github.com/millQ-dev/MillQ.git` (mirror only)  
-**Accept PR #19:** ADR-0017 @ `1f683dc57b988708b5149ba2d7771b0b46ed66f5`  
+**Accept PR #19:** ADR-0017 @ `1f683dc`  
 **Accept PR #17:** ADR-0018 @ `be58388`  
 **Accept PR #15:** ADR-0014 / ADR-0016 @ `f764599`  
 **Accept PR #13:** ADR-0015 / ADR-0019 @ `4510092`  
 **Accept PR #11:** ADR-0012 / ADR-0013 @ `cf3375f`  
 **Architecture v1.3 PR:** https://cursor.com/codebase/millqdev/MillQ/pull/9 — **merged** @ `77c6949`  
-**Updated:** 2026-09-12
+**Updated:** 2026-09-12 (ADR-0011 Accept PR pending)
 
 ## Runtime / CI / backup
 
@@ -24,6 +24,7 @@
 | ADR-0014 / ADR-0016 | **Accepted** (PR #15 → `f764599`) |
 | ADR-0018 | **Accepted** (PR #17 → `be58388`) |
 | ADR-0017 | **Accepted** (PR #19 → `1f683dc`) |
+| ADR-0011 | **Accepted** (this change-set — PR pending merge) |
 | New application verticals | **STOP** until PO launches next vertical |
 | Origin CI | **Attached** — Depot |
 | GitHub Actions | Dormant copies only |
@@ -42,6 +43,7 @@
 | ADR-0008 | Accepted | Domain Boundaries Architecture v1.2 |
 | ADR-0009 | Accepted | Catalog, Units, SupplierItem |
 | ADR-0010 | Accepted | Document posting & correction |
+| ADR-0011 | Accepted | Migration Architecture |
 | ADR-0012 | Accepted | JurisdictionProfile vs Provider Adapters |
 | ADR-0013 | Accepted | Payment Non-Custody Boundary |
 | ADR-0014 | Accepted | Vietnam Fiscalization Architecture Boundary |
@@ -55,9 +57,7 @@
 
 ## Proposed (Architecture v1.3 — not yet Accepted)
 
-| ADR | Topic |
-| --- | --- |
-| ADR-0011 | Migration Architecture |
+_None remaining in the ADR-0011…0019 set._
 
 ### Settlement / non-custody invariant (ADR-0013 + ADR-0016)
 
@@ -92,10 +92,6 @@ Floor/Table owns `TableAssignment` (refs `OrderId`). Orders owns Order truth onl
 
 1. ~~Block C~~ done  
 2. ~~Architecture v1.3 alignment~~ merged  
-3. ~~ADR-0012 / ADR-0013~~ Accepted  
-4. ~~ADR-0015 / ADR-0019~~ Accepted  
-5. ~~ADR-0014 / ADR-0016~~ Accepted  
-6. ~~ADR-0018~~ Accepted  
-7. ~~ADR-0017~~ **Accepted** (PR #19 → `1f683dc`)  
-8. Next PO review: **ADR-0011** Migration Architecture  
-9. Application verticals remain **STOP** until PO launch  
+3. ~~ADR-0012…0019~~ Accepted (0011 pending merge of this Accept PR)  
+4. ADR-0011 Accept PR — **await strategic review / merge**  
+5. Application verticals remain **STOP** until PO launch  
