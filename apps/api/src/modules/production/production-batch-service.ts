@@ -3,6 +3,7 @@ import type pg from 'pg';
 import {
   assertDeviationRules,
   assertPositiveQuantity,
+  assertSameDimensionCompatibleUnits,
   computeActualYieldRatio,
   computeYieldVariance,
   DomainError,
@@ -771,6 +772,26 @@ export class ProductionBatchService {
     }
   }
 
+  private assertInputActualCompatible(
+    planned: { unit: string; dimension: UnitDimension },
+    actual: { quantity: string; unit: string; dimension: UnitDimension },
+    label: string,
+  ) {
+    if (actual.dimension !== planned.dimension) {
+      throw new DomainValidationError(
+        'INCOMPATIBLE_UNIT',
+        `${label}: actual dimension ${actual.dimension} must match planned ${planned.dimension}`,
+      );
+    }
+    try {
+      assertSameDimensionCompatibleUnits(actual.unit, planned.unit, planned.dimension);
+      normalizeToBaseUnit(actual.quantity, actual.unit, actual.dimension);
+      normalizeToBaseUnit('1', planned.unit, planned.dimension);
+    } catch (err) {
+      mapDomainError(err);
+    }
+  }
+
   private async insertInputLines(
     client: Client,
     batchId: string,
@@ -784,6 +805,11 @@ export class ProductionBatchService {
       const actualUnit = override?.actualUnit ?? c.unit;
       const actualDimension = override?.actualDimension ?? c.dimension;
       qtyPositive(actualQuantity, actualDimension, actualUnit, `input line ${c.line_number}`);
+      this.assertInputActualCompatible(
+        { unit: c.unit, dimension: c.dimension },
+        { quantity: actualQuantity, unit: actualUnit, dimension: actualDimension },
+        `input line ${c.line_number}`,
+      );
       await client.query(
         `INSERT INTO production_batch_input (
            production_batch_input_id, production_batch_id, line_number, component_kind,
@@ -826,7 +852,33 @@ export class ProductionBatchService {
   ) {
     for (const o of overrides) {
       qtyPositive(o.actualQuantity, o.actualDimension, o.actualUnit, `input line ${o.lineNumber}`);
-      const res = await client.query(
+      const planned = await client.query<{
+        planned_unit: string;
+        planned_dimension: UnitDimension;
+      }>(
+        `SELECT planned_unit, planned_dimension::text AS planned_dimension
+         FROM production_batch_input
+         WHERE production_batch_id = $1 AND line_number = $2
+         FOR UPDATE`,
+        [batchId, o.lineNumber],
+      );
+      const row = planned.rows[0];
+      if (!row) {
+        throw new DomainValidationError(
+          'UNKNOWN_INPUT_LINE',
+          `No planned input line ${o.lineNumber} on production batch`,
+        );
+      }
+      this.assertInputActualCompatible(
+        { unit: row.planned_unit, dimension: row.planned_dimension },
+        {
+          quantity: o.actualQuantity,
+          unit: o.actualUnit,
+          dimension: o.actualDimension,
+        },
+        `input line ${o.lineNumber}`,
+      );
+      await client.query(
         `UPDATE production_batch_input SET
            actual_quantity = $3,
            actual_unit = $4,
@@ -834,12 +886,6 @@ export class ProductionBatchService {
          WHERE production_batch_id = $1 AND line_number = $2`,
         [batchId, o.lineNumber, o.actualQuantity, o.actualUnit, o.actualDimension],
       );
-      if (res.rowCount === 0) {
-        throw new DomainValidationError(
-          'UNKNOWN_INPUT_LINE',
-          `No planned input line ${o.lineNumber} on production batch`,
-        );
-      }
     }
   }
 

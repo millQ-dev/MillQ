@@ -536,4 +536,53 @@ describe('Block D1.2A ProductionBatch foundation (PostgreSQL)', () => {
       } as never),
     ).rejects.toBeTruthy();
   });
+
+  it('19 — line actual unit/dimension must match planned measurement', async () => {
+    const prep = await publishedStockTrackedPrep();
+    await expect(
+      service.createDraft({
+        tenantId: fx.tenantId,
+        warehouseId: fx.warehouseId,
+        preparationVersionId: prep.preparationVersionId,
+        inputActuals: [
+          {
+            lineNumber: 1,
+            actualQuantity: '1',
+            actualUnit: 'L',
+            actualDimension: 'VOLUME',
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: 'INCOMPATIBLE_UNIT' });
+
+    const batch = await service.createDraft({
+      tenantId: fx.tenantId,
+      warehouseId: fx.warehouseId,
+      preparationVersionId: prep.preparationVersionId,
+      inputActuals: [
+        {
+          lineNumber: 1,
+          actualQuantity: '1000',
+          actualUnit: 'g',
+          actualDimension: 'MASS',
+        },
+      ],
+    });
+    expect(batch.inputs[0]!.actualUnit).toBe('g');
+    expect(batch.inputs[0]!.actualQuantity).toBe('1000');
+
+    await expect(
+      service.updateDraft({
+        productionBatchId: batch.productionBatchId,
+        inputActuals: [
+          {
+            lineNumber: 1,
+            actualQuantity: '2',
+            actualUnit: 'L',
+            actualDimension: 'VOLUME',
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: 'INCOMPATIBLE_UNIT' });
+  });
 });
