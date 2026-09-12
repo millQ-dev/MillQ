@@ -1,10 +1,11 @@
 # MillQ Current State
 
-**Checkpoint:** Architecture v1.3 alignment **merged** on Origin `main` @ `77c6949` (2026-09-12)  
+**Checkpoint:** ADR-0012 / ADR-0013 **Accepted** — Origin `main` @ `cf3375f` (2026-09-12)  
 **Canonical host:** Cursor Origin (`https://origin.cursor.com/millqdev/MillQ.git`)  
 **Backup host:** GitHub `https://github.com/millQ-dev/MillQ.git` (mirror only)  
-**Architecture PR:** https://cursor.com/codebase/millqdev/MillQ/pull/9 — **merged** (`77c69495fd22f6db81555c84a7decd28969e2ac4`)  
-**Updated:** 2026-09-12 (ADR-0012 / ADR-0013 Accepted)
+**Accept PR:** https://cursor.com/codebase/millqdev/MillQ/pull/11 — **merged** (`cf3375fc18aa77e29a3f57291c993677acfa4b38`)  
+**Architecture v1.3 PR:** https://cursor.com/codebase/millqdev/MillQ/pull/9 — **merged** @ `77c6949`  
+**Updated:** 2026-09-12
 
 ## Runtime / CI / backup
 
@@ -14,6 +15,7 @@
 | Architecture v1.2 | **Accepted / Merged** |
 | Block C Goods Receipt vertical | **Merged** + v1.3-compatible |
 | Architecture v1.3 alignment | **Merged** (PR #9 → `77c6949`) |
+| ADR-0012 / ADR-0013 | **Accepted** (PR #11 → `cf3375f`) |
 | New application verticals | **STOP** until PO launches next vertical |
 | Origin CI | **Attached** — Depot |
 | GitHub Actions | Dormant copies only |
@@ -49,10 +51,14 @@
 | ADR-0018 | Offline Multi-Platform Client Runtime |
 | ADR-0019 | Economic Facts & Contribution Margin |
 
+### Forward constraint for future ADR-0016 (not an Accept of 0016)
+
+A recorded **external** deposit/prepayment (allowed under ADR-0013) **must not** become a MillQ custodial balance or wallet when Settlement/Check concepts are designed. ADR-0016 remains **Proposed**.
+
 ## Architecture baseline
 
 - [`docs/architecture/architecture-v1.2.md`](../architecture/architecture-v1.2.md) (Accepted)
-- [`docs/architecture/architecture-v1.3.md`](../architecture/architecture-v1.3.md) (merged with PR #9; §§15–16 backed by Accepted ADR-0020/0021)
+- [`docs/architecture/architecture-v1.3.md`](../architecture/architecture-v1.3.md)
 - [`docs/architecture/domain-module-map.md`](../architecture/domain-module-map.md)
 - [`docs/architecture/block-c-implementation.md`](../architecture/block-c-implementation.md)
 
@@ -63,7 +69,7 @@
 
 ## Explicitly not started (implementation)
 
-- Next vertical candidate after PO launch: **Recipes → Sale write-off → Food Cost**
+- Next vertical candidate after PO launch: **Recipes → Sale write-off → Food Cost** (with Professional Account client-context ADR track as previously recommended)
 - Migration Core scaffolding & source adapters
 - Fiscal provider adapters
 - POS / FloorPlan / Grab / Shopee
@@ -73,6 +79,7 @@
 ## Next recommended sequence
 
 1. ~~Block C~~ done  
-2. ~~Architecture v1.3 alignment PR #9~~ **merged** @ `77c6949`  
-3. PO launches next application vertical (candidate: Recipes → Sale write-off → Food Cost)  
-4. Only then implement that vertical — **STOP** until PO launch  
+2. ~~Architecture v1.3 alignment PR #9~~ merged  
+3. ~~ADR-0012 / ADR-0013 Accept PR #11~~ **merged** @ `cf3375f`  
+4. Continue PO review of remaining Proposed ADRs (next packet: **ADR-0015**, **ADR-0019**)  
+5. Application verticals remain **STOP** until PO launch  
