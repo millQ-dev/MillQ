@@ -4,9 +4,9 @@
 - **Date:** 2026-09-04
 - **Canonical host:** Cursor Origin
 - **Base:** Architecture [v1.2](architecture-v1.2.md) (Accepted) + Block C merged @ `a5e84b0` / main tip at alignment start `46f01ec`
-- **Related ADRs:** ADR-0001…0004, 0006…0010, 0012, 0013, 0015, 0019 (Accepted); ADR-0020, ADR-0021 (Accepted); ADR-0011, 0014, 0016…0018 (Proposed)
+- **Related ADRs:** ADR-0001…0004, 0006…0010, 0012…0016, 0019 (Accepted); ADR-0020, ADR-0021 (Accepted); ADR-0011, 0017, 0018 (Proposed)
 - **Module map:** [`domain-module-map.md`](domain-module-map.md)
-- **Authority command:** KiU correcting command after gap-analysis (PO / strategic architecture); PO ACCEPT ADR-0015/0019 deltas (2026-09-12)
+- **Authority command:** KiU correcting command after gap-analysis (PO / strategic architecture); PO ACCEPT ADR-0014/0016 deltas (2026-09-12)
 
 ## 1. Purpose
 
@@ -15,7 +15,7 @@ Architecture v1.3 **extends** v1.2 with boundaries that must be frozen **before*
 ```text
 v1.2 domain boundaries (Accepted)
         +
-v1.3 deltas (this document + ADR-0011, 0014, 0016…0018 Proposed + ADR-0012/0013/0015/0019/0020/0021 Accepted)
+v1.3 deltas (this document + ADR-0011, 0017, 0018 Proposed + ADR-0012…0016, 0019, 0020, 0021 Accepted)
         =
 Architecture v1.3 baseline for resumed implementation
 ```
@@ -55,9 +55,9 @@ Modular monolith; TypeScript monorepo; Origin SoT; ADR-0002/0003 measurement & c
 | Migration Core + Canonical + Mapping + Historical policy | ADR-0011 |
 | JurisdictionProfile ≠ provider adapters | ADR-0012 (**Accepted**) |
 | Payment non-custody (no merchant/customer funds) | ADR-0013 (**Accepted**) |
-| Vietnam fiscalization architecture boundary now | ADR-0014 |
+| Vietnam fiscalization architecture boundary now | ADR-0014 (**Accepted**) |
 | PII Vault, VN-primary residency, egress gate, MillQ LLC boundary | ADR-0015 (**Accepted**) |
-| Order Settlement / Split Bill | ADR-0016 |
+| Order Settlement / Split Bill | ADR-0016 (**Accepted**) |
 | FloorPlan / Table Engine | ADR-0017 |
 | Offline multi-platform client runtime | ADR-0018 |
 | Economic facts / contribution margin / channel profit | ADR-0019 (**Accepted**) |
@@ -86,23 +86,13 @@ Detailed module ownership: [`domain-module-map.md`](domain-module-map.md).
 
 ## 6. Settlement / Split Bill (new)
 
-Settlement is **not** “just multiple Payment rows on Order”.
-
-Conceptual model:
+**Order ≠ Settlement** (ADR-0016 **Accepted**).
 
 ```text
-Order
-  └── SettlementGroup? (one open settlement context)
-        ├── Check[]            (bill partitions)
-        │     └── CheckLineAllocation[]  (lines / guests / amounts)
-        └── PaymentAllocation[] → Payment
+Order → SettlementGroup → Check(s) → CheckLineAllocation → PaymentAllocation
 ```
 
-Supports: split by lines, by guests, mixed tender, partial payment, fiscal interaction per Check/FiscalDocument rules (ADR-0014).
-
-**Forward constraint (ADR-0013 Accepted → future ADR-0016):** a recorded external deposit/prepayment must **not** become a MillQ custodial balance or wallet. ADR-0016 remains Proposed.
-
-See ADR-0016.
+Supports: split bill, partial payment, mixed tenders, multiple payments, multiple Checks per Order. Settlement completion = allocated valid payment coverage (not mere payment-record presence). Provider outcome ≠ allocation. Deposits/prepayments referenceable/allocatable without MillQ wallet (ADR-0013). Tips separate from principal; no custody; tax via JurisdictionProfile. Refunds = compensating history. One SettlementGroup must not span LegalEntities. Combined orders within one LE optional later (not MVP). Fiscalization consumes settlement via ADR-0014 — no fiscal SDK in Settlement.
 
 ## 7. FloorPlan / Table Engine (new)
 
@@ -123,13 +113,24 @@ See ADR-0017.
 
 ## 8. Fiscalization (architecture now ≠ provider later ≠ legal G2)
 
+Dedicated Fiscalization boundary (ADR-0014 **Accepted**):
+
+```text
+Settlement / business outcome → Fiscal Policy evaluation → FiscalDocument
+  → FiscalSubmission → ProviderAdapter → provider status → Audit
+```
+
 | Layer | Timing |
 | --- | --- |
-| Architecture boundary (FiscalPolicy, FiscalSeries, FiscalDocument, FiscalSubmission, correction chains, idempotency, reconciliation, provider adapter **interface**) | **Now** (ADR-0014) |
+| Architecture boundary (FiscalPolicy, FiscalSeries, FiscalDocument, FiscalSubmission, correction chains, idempotency, reconciliation, provider adapter **interface**) | **Now** (Accepted) |
 | Concrete MISA/Viettel/… adapter | Later |
 | Legal production clearance | **LEGAL GATE G2** — separate from architecture acceptance |
 
-Do **not** invent Vietnam legal text in ADRs.
+- Does **not** own Order / Payment / Inventory truth. Order ≠ FiscalDocument; cardinality supports split/partial/corrections/refunds/multi-doc.
+- Fiscal documents immutable; corrections = explicit chains.
+- Offline: business may complete; fiscal may queue; statuses PENDING/QUEUED/SUBMITTED/ACCEPTED/REJECTED…; never fabricate acceptance.
+- JurisdictionProfile selects policy/version at business time.
+- No provider SDK in Orders/Settlement. Do **not** invent Vietnam legal text in ADRs.
 
 ## 9. Privacy, residency, egress, LLC
 
