@@ -4,7 +4,7 @@
 - **Date:** 2026-09-04
 - **Accepted:** 2026-09-12 (PO ACCEPT WITH DELTAS — kept as one control-plane ADR; not split)
 - **Decision owners:** Product Owner and System Architect
-- **Related:** Architecture v1.3, ADR-0008, ADR-0011, ADR-0012 (Accepted), Identity module, ADR-0020, ADR-0021
+- **Related:** Architecture v1.3, ADR-0008, ADR-0011, ADR-0012 (Accepted), Identity module, ADR-0020, ADR-0021, [ADR-0022](ADR-0022-professional-account-cross-business-access.md) (Accepted — Professional Account), [ADR-0023](ADR-0023-workforce-recruiting-learning-assessment.md) (Accepted — Workforce / Assessment media)
 
 ## Context
 
@@ -25,7 +25,7 @@ This ADR remains **one** security/privacy control-plane decision for now. It is 
   - inherited permissions between clients.
 - Cross-business professional access is a **controlled exceptional access path**, not default membership.
 
-### Professional access (boundary only — detailed model ADR PENDING)
+### Professional access (boundary — detailed model ADR-0022 **Accepted**)
 
 Future professional roles (first use case: **External Accountant**) **MAY** receive explicit access grants to multiple independent client Business Groups / Tenants.
 
@@ -51,7 +51,7 @@ Audit of professional cross-business access/action must preserve at least:
 - result;
 - reason where required.
 
-**Professional Account detailed model remains ADR PENDING** (not designed here).
+**Professional Account detailed model:** [ADR-0022](ADR-0022-professional-account-cross-business-access.md) (**Accepted**). This ADR does **not** weaken ADR-0022 invariants.
 
 ### Privacy Control Plane / PII Vault
 
@@ -123,9 +123,9 @@ Rules above cover speech as a data-processing path. Clarifications (see ADR-0021
 | **A. Transient Voice Interaction audio** | ADR-0021 **zero-retention default** applies after processing |
 | **B. Deliberately submitted interview / learning / assessment audio** | May require retention for human review / evidence; **zero-retention must NOT be blindly inherited** |
 
-Assessment / interview media requires an **explicit future policy** covering: purpose; consent / legal basis; retention period; deletion; reviewer permissions; transcript handling; model/provider egress.
+Assessment / interview media policy is owned by [ADR-0023](ADR-0023-workforce-recruiting-learning-assessment.md) (**Accepted**) under this Privacy Control Plane: purpose; consent / legal basis; retention; deletion; reviewer permissions; transcript handling; model/provider egress.
 
-**Workforce / Assessment remains ADR PENDING.**
+**Workforce / Assessment:** ADR-0023 **Accepted**. Do **not** apply ADR-0021 zero-retention blindly to assessment audio.
 
 Also:
 
@@ -138,7 +138,8 @@ Also:
 - Intelligence and analytics prefer aggregated / non-PII evidence; PII access is exceptional and audited (ADR-0006 remains).
 - Architecture acceptance does **not** equal PDPA/cybersecurity certification.
 - Model/speech execution details: ADR-0020, ADR-0021 — they do not weaken this plane.
-- Professional Account and Workforce/Assessment products need their own ADRs before implementation.
+- Professional Account product surfaces remain deferred (ADR-0022 acceptance ≠ UI).
+- Workforce / Recruiting / Learning / Assessment product surfaces remain deferred (ADR-0023 acceptance ≠ implementation).
 - Cross-client read models must not merge Operational Core ledgers.
 
 ## Alternatives considered

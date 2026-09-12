@@ -1,6 +1,6 @@
 # MillQ Current State
 
-**Checkpoint:** ADR-0011 **Accepted** — Origin `main` @ `cf5398a` (2026-09-12)  
+**Checkpoint:** ADR-0011 **Accepted** — Origin `main` tip after checkpoint @ `3d0b6fe` (2026-09-12)  
 **Canonical host:** Cursor Origin (`https://origin.cursor.com/millqdev/MillQ.git`)  
 **Backup host:** GitHub `https://github.com/millQ-dev/MillQ.git` (mirror only)  
 **Accept PR #21:** ADR-0011 @ `cf5398a`  
@@ -10,7 +10,7 @@
 **Accept PR #13:** ADR-0015 / ADR-0019 @ `4510092`  
 **Accept PR #11:** ADR-0012 / ADR-0013 @ `cf3375f`  
 **Architecture v1.3 PR:** https://cursor.com/codebase/millqdev/MillQ/pull/9 — **merged** @ `77c6949`  
-**Updated:** 2026-09-12
+**Updated:** 2026-09-12 (ADR-0022 / 0023 / 0024 Accept PR pending)
 
 ## Runtime / CI / backup
 
@@ -26,6 +26,7 @@
 | ADR-0018 | **Accepted** (PR #17 → `be58388`) |
 | ADR-0017 | **Accepted** (PR #19 → `1f683dc`) |
 | ADR-0011 | **Accepted** (PR #21 → `cf5398a`) |
+| ADR-0022 / ADR-0023 / ADR-0024 | **Accepted** (this change-set — PR pending merge) |
 | New application verticals | **STOP** until PO launches next vertical |
 | Origin CI | **Attached** — Depot |
 | GitHub Actions | Dormant copies only |
@@ -55,10 +56,13 @@
 | ADR-0019 | Accepted | Economic Facts & Contribution Margin |
 | ADR-0020 | Accepted | Production Intelligence Execution & Model Gateway |
 | ADR-0021 | Accepted | Voice & Multilingual Interaction Boundary |
+| ADR-0022 | Accepted | Professional Account & Cross-Business Access |
+| ADR-0023 | Accepted | Workforce / Recruiting / Learning / Assessment |
+| ADR-0024 | Accepted | Allergen & Dietary Constraint Resolution |
 
 ## Proposed (Architecture v1.3 — not yet Accepted)
 
-_None remaining in the ADR-0011…0019 set._
+_None remaining in the ADR-0011…0024 set covered by this architecture track._
 
 ### Settlement / non-custody invariant (ADR-0013 + ADR-0016)
 
@@ -67,6 +71,18 @@ A recorded **external** deposit/prepayment may be referenced/allocated later but
 ### Floor / Table ownership invariant (ADR-0017)
 
 Floor/Table owns `TableAssignment` (refs `OrderId`). Orders owns Order truth only and does not depend on Floor/Table internal state.
+
+### Professional access invariant (ADR-0022)
+
+Ordinary membership ≠ professional `ClientAccessGrant`. Mutations in exactly one client Tenant context; no shared tenant / cross-client mutation.
+
+### Employment decision invariant (ADR-0023)
+
+AI may score/recommend; material employment decisions require authorized human action + audit. Assessment audio ≠ ADR-0021 zero-retention.
+
+### Allergen resolution invariant (ADR-0024)
+
+Structured Effective Recipe resolution; `UNKNOWN` never silently SAFE; AI/voice must not invent ingredients.
 
 ## Architecture baseline
 
@@ -79,6 +95,7 @@ Floor/Table owns `TableAssignment` (refs `OrderId`). Orders owns Order truth onl
 
 - Block C: Goods Receipt → movements → balance → CostQuote → GoodsReceived fact mirror
 - No Migration adapters, fiscal providers, POS/FloorPlan, Grab/Shopee, sale write-off, ModelGateway, ASR/TTS, or GPU runtime
+- No Professional Account / Workforce recruiting / Allergen Resolver application code
 
 ## Explicitly not started (implementation)
 
@@ -87,6 +104,9 @@ Floor/Table owns `TableAssignment` (refs `OrderId`). Orders owns Order truth onl
 - Fiscal provider adapters
 - POS / FloorPlan / Grab / Shopee
 - ModelGateway / Intelligence runtime / Voice runtime
+- Professional Account / accountant workspace
+- Workforce recruiting / learning / assessment product
+- Allergen Resolver UI
 - Intelligence algorithms
 
 ## Next recommended sequence
@@ -94,6 +114,6 @@ Floor/Table owns `TableAssignment` (refs `OrderId`). Orders owns Order truth onl
 1. ~~Block C~~ done  
 2. ~~Architecture v1.3 alignment~~ merged  
 3. ~~ADR-0011…0019~~ **Accepted** (PR #21 → `cf5398a`)  
-4. Next architecture delta (docs): Professional Account / Cross-Business Access; Workforce / Recruiting / Learning / Assessment; Allergen & Dietary Constraint Resolution — **await PO launch of that docs block**  
+4. ~~ADR-0022 / ADR-0023 / ADR-0024~~ Accept PR — **await strategic review / merge**  
 5. Application verticals remain **STOP** until PO launch  
-6. Review policy: standard handoff review used for PR #21; **mandatory full diff review** due every third PR (or earlier if architectural ambiguity)  
+6. Review policy: standard handoff review used for recent Accept PRs; **mandatory full diff review** due every third PR (or earlier if architectural ambiguity)  
