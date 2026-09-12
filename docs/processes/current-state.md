@@ -1,8 +1,9 @@
 # MillQ Current State
 
-**Checkpoint:** ADR-0022 / ADR-0023 / ADR-0024 **Accepted** — Origin `main` @ `3590147` (2026-09-12)  
+**Checkpoint:** Block D1.1 Recipes & Preparations foundation **Merged** — Origin `main` @ `3ff79a2` (2026-09-12)  
 **Canonical host:** Cursor Origin (`https://origin.cursor.com/millqdev/MillQ.git`)  
 **Backup host:** GitHub `https://github.com/millQ-dev/MillQ.git` (mirror only)  
+**Block D1.1 PR #25:** merged @ `3ff79a2` (tip before merge `3c7c84a`)  
 **Accept PR #23:** ADR-0022 / ADR-0023 / ADR-0024 @ `3590147`  
 **Accept PR #21:** ADR-0011 @ `cf5398a`  
 **Accept PR #19:** ADR-0017 @ `1f683dc`  
@@ -28,8 +29,8 @@
 | ADR-0017 | **Accepted** (PR #19 → `1f683dc`) |
 | ADR-0011 | **Accepted** (PR #21 → `cf5398a`) |
 | ADR-0022 / ADR-0023 / ADR-0024 | **Accepted** (PR #23 → `3590147`) |
-| Block D1.1 Recipes & Preparations foundation | **In review** (docs+domain; no sales/write-off) |
-| New application verticals beyond D1.1 scope | **STOP** until PO launches next slice |
+| Block D1.1 Recipes & Preparations foundation | **Merged** (PR #25 → `3ff79a2`; no ProductionBatch / sale write-off) |
+| New application verticals beyond D1.1 (incl. D1.2) | **STOP** until PO launches next slice |
 | Origin CI | **Attached** — Depot |
 | GitHub Actions | Dormant copies only |
 | GitHub backup | Post-merge Origin→GitHub via **MillQ Origin Backup** App |
@@ -96,13 +97,13 @@ Structured Effective Recipe resolution; `UNKNOWN` never silently SAFE; AI/voice 
 ## What exists in code
 
 - Block C: Goods Receipt → movements → balance → CostQuote → GoodsReceived fact mirror
-- Block D1.1 (this PR): RecipeSpecification / RecipeVersion / PreparationSpecification with VIRTUAL|STOCK_TRACKED, nested graph validation, normative yield — **no** ProductionBatch / sale write-off
+- Block D1.1 **Merged**: RecipeSpecification / RecipeVersion / PreparationSpecification with VIRTUAL|STOCK_TRACKED, nested graph validation, normative yield — **no** ProductionBatch / sale write-off
 - No Migration adapters, fiscal providers, POS/FloorPlan, Grab/Shopee, ModelGateway, ASR/TTS, or GPU runtime
 - No Professional Account / Workforce recruiting / Allergen Resolver application code
 
 ## Explicitly not started (implementation)
 
-- D1.1 beyond foundation: ProductionBatch / actual yield / production inventory movements
+- **D1.2** ProductionBatch / actual yield / production inventory movements — **not started**
 - Next vertical slices after PO: **Sale write-off → Food Cost**
 - Migration Core scaffolding & source adapters
 - Fiscal provider adapters
@@ -118,7 +119,7 @@ Structured Effective Recipe resolution; `UNKNOWN` never silently SAFE; AI/voice 
 1. ~~Block C~~ done  
 2. ~~Architecture v1.3 alignment~~ merged  
 3. ~~ADR-0011…0024~~ **Accepted**  
-4. Block D1.1 Recipes & Preparations foundation — **await full-diff strategic review / merge**  
-5. Further application slices remain **STOP** until PO launch  
-6. Review policy: **THIS PR requires COMPLETE INDEPENDENT FULL-DIFF REVIEW** before merge  
+4. ~~Block D1.1 Recipes & Preparations foundation~~ **Merged** (PR #25 → `3ff79a2`)  
+5. Further application slices (incl. **D1.2 Production Batch**) remain **STOP** until PO launch  
+6. Review policy: next substantive PR requires **COMPLETE INDEPENDENT FULL-DIFF REVIEW** before merge  
 
