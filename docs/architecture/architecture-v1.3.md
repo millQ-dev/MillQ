@@ -4,9 +4,9 @@
 - **Date:** 2026-09-04
 - **Canonical host:** Cursor Origin
 - **Base:** Architecture [v1.2](architecture-v1.2.md) (Accepted) + Block C merged @ `a5e84b0` / main tip at alignment start `46f01ec`
-- **Related ADRs:** ADR-0001…0004, 0006…0010, 0012…0016, 0018, 0019 (Accepted); ADR-0020, ADR-0021 (Accepted); ADR-0011, 0017 (Proposed)
+- **Related ADRs:** ADR-0001…0004, 0006…0010, 0012…0019 (Accepted); ADR-0020, ADR-0021 (Accepted); ADR-0011 (Proposed)
 - **Module map:** [`domain-module-map.md`](domain-module-map.md)
-- **Authority command:** KiU correcting command after gap-analysis (PO / strategic architecture); PO ACCEPT ADR-0018 deltas (2026-09-12)
+- **Authority command:** KiU correcting command after gap-analysis (PO / strategic architecture); PO ACCEPT ADR-0017 deltas (2026-09-12)
 
 ## 1. Purpose
 
@@ -15,7 +15,7 @@ Architecture v1.3 **extends** v1.2 with boundaries that must be frozen **before*
 ```text
 v1.2 domain boundaries (Accepted)
         +
-v1.3 deltas (this document + ADR-0011, 0017 Proposed + ADR-0012…0016, 0018, 0019, 0020, 0021 Accepted)
+v1.3 deltas (this document + ADR-0011 Proposed + ADR-0012…0021 Accepted)
         =
 Architecture v1.3 baseline for resumed implementation
 ```
@@ -60,7 +60,7 @@ Modular monolith; TypeScript monorepo; Origin SoT; ADR-0002/0003 measurement & c
 | Vietnam fiscalization architecture boundary now | ADR-0014 (**Accepted**) |
 | PII Vault, VN-primary residency, egress gate, MillQ LLC boundary | ADR-0015 (**Accepted**) |
 | Order Settlement / Split Bill | ADR-0016 (**Accepted**) |
-| FloorPlan / Table Engine | ADR-0017 |
+| FloorPlan / Table Engine | ADR-0017 (**Accepted**) |
 | Offline multi-platform client runtime | ADR-0018 (**Accepted**) |
 | Economic facts / contribution margin / channel profit | ADR-0019 (**Accepted**) |
 | Security Control Plane / GovernmentRequestCase | ADR-0015 §Security (**Accepted**) |
@@ -98,18 +98,19 @@ Supports: split bill, partial payment, mixed tenders, multiple payments, multipl
 
 ## 7. FloorPlan / Table Engine (new)
 
-Accepted direction before Restaurant implementation:
+ADR-0017 **Accepted**: Order does **not** require Table; Floor/Table is optional capability (Corner OFF / Cafe optional / Restaurant enabled — not product forks).
 
 ```text
-DiningArea
-FloorPlanVersion (immutable published layout)
-  └── TableLayoutObject[] / Table[]
-TableRuntimeState (operational)
-TableAssignment (Order ↔ Table, optional)
-TableCombination
+RestaurantLocation → DiningArea → FloorPlanVersion → Table
+Runtime: TableRuntimeState; Floor/Table-owned optional TableAssignment (refs OrderId); optional TableCombination
 ```
 
-Tables remain an **optional capability** (`tables.enabled`). Orders must not require `table_id NOT NULL`.
+- Floor plans versioned; no silent rewrite of historical table/plan context.
+- TableRuntimeState is operational only — not settlement/inventory SoT.
+- Assignment/move is explicit + auditable (Floor/Table owns TableAssignment; Orders does not); multiple Orders/Checks per table allowed.
+- Combinations must not destroy Table identities; do not force `Order.table_id` as sole model.
+- Reservations out of scope. Offline per ADR-0018. Not coupled to ProductionRoute.
+- Accept = boundaries only (no floor editor / POS / reservation product).
 
 See ADR-0017.
 
