@@ -1,6 +1,6 @@
 # Block D1.1 Implementation — Recipes & Preparations Foundation
 
-**Status:** Implemented on feature branch (awaiting independent full-diff strategic review)  
+**Status:** **Merged** on Origin `main` @ `3ff79a2` (PR #25, 2026-09-12)  
 **ADRs:** ADR-0002, ADR-0003, ADR-0008, ADR-0009, ADR-0019, ADR-0024 (composition source only)  
 **Autonomy:** Level C
 
