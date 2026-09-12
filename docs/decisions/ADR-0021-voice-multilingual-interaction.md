@@ -4,7 +4,7 @@
 - **Date:** 2026-09-12
 - **Accepted:** 2026-09-12 (PO strategic review — intent classes)
 - **Decision owners:** Product Owner and System Architect
-- **Related:** Architecture v1.3, [ADR-0015](ADR-0015-privacy-residency-security.md), [ADR-0018](ADR-0018-offline-multiplatform-runtime.md), [ADR-0020](ADR-0020-intelligence-execution-model-gateway.md)
+- **Related:** Architecture v1.3, [ADR-0015](ADR-0015-privacy-residency-security.md), [ADR-0018](ADR-0018-offline-multiplatform-runtime.md), [ADR-0020](ADR-0020-intelligence-execution-model-gateway.md), [ADR-0023](ADR-0023-workforce-recruiting-learning-assessment.md) (Accepted — assessment audio ≠ transient voice), [ADR-0024](ADR-0024-allergen-dietary-constraint-resolution.md) (Accepted — structured allergen resolution before voice/LLM explanation)
 
 ## Context
 
@@ -63,9 +63,11 @@ Owner operational question → Informational query (class A) via EvidenceBuilder
 - Critical intents (class **D**) require **explicit confirmation**, authorization, reason when policy requires it, normal domain command, and audit.
 - Low-confidence recognition ⇒ **NO command**.
 - Menu/order interpretation resolves through **Catalog / Menu / modifiers / availability**, not unconstrained free-text hallucination.
+- Allergen / dietary guest questions resolve through the **structured Allergen Resolver first** ([ADR-0024](ADR-0024-allergen-dietary-constraint-resolution.md)); voice/LLM may explain/translate the result — never invent ingredients, override `UNKNOWN`, or claim safe from free text.
 - **Push-to-talk first**; wake-word later.
 - **No** voiceprint / speaker identification by default.
-- **Raw audio zero-retention by default** after processing (ADR-0015 data-processing paths).
+- **Raw audio zero-retention by default** after processing (ADR-0015 data-processing paths) for **transient Voice Interaction**.
+- Deliberately submitted **assessment / interview / learning audio** is **not** covered by this zero-retention default — see [ADR-0023](ADR-0023-workforce-recruiting-learning-assessment.md) + ADR-0015 class B.
 - Transcript retention only under explicit retention / business policy.
 - External speech/model providers go through ADR-0015 **Egress Gate** (and ModelGateway / registry when models are involved — ADR-0020).
 - Voice unavailable offline **does not** block POS / KDS / printing (ADR-0018).
@@ -101,4 +103,5 @@ No new deployable / microservice required by this ADR.
 ## LEGAL GATES
 
 - Cross-border ASR/TTS providers require Egress Gate (ADR-0015).
-- Retention of transcripts/audio beyond zero-retention default requires explicit policy / legal review.
+- Retention of **transient** Voice Interaction transcripts/audio beyond zero-retention default requires explicit policy / legal review.
+- Assessment / interview media retention is governed by ADR-0023 under ADR-0015 — not by blind inheritance of this ADR’s zero-retention default.

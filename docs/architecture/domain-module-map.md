@@ -35,23 +35,23 @@ LegalEntity is fiscal/legal — **not** part of menu inheritance.
 
 | | |
 | --- | --- |
-| **Owns** | Users, credentials, roles, permissions, access grants, sessions/devices |
-| **Does not own** | Workforce HR records beyond access, commercial availability |
-| **Key concepts** | User, Role, Permission, AccessGrant, Session, AuthorizationPolicy, VisibilityPolicy |
-| **Commands in** | Authenticate, GrantAccess, AuthorizeDangerousOperation |
-| **Facts out** | AccessGranted, DangerousOperationAuthorized (AUDIT) |
+| **Owns** | Users, credentials, roles, permissions, ordinary tenant access grants, sessions/devices; ProfessionalProfile / ClientAccessGrant path (ADR-0022) |
+| **Does not own** | Workforce HR records beyond access; ProfessionalOrganization commercial billing |
+| **Key concepts** | User, Role, Permission, AccessGrant, Session, AuthorizationPolicy, VisibilityPolicy; ProfessionalProfile; ClientAccessGrant (independent per client; no inheritance) |
+| **Commands in** | Authenticate, GrantAccess, GrantProfessionalClientAccess, RevokeProfessionalClientAccess, AuthorizeDangerousOperation |
+| **Facts out** | AccessGranted, ProfessionalClientAccessGranted/Revoked, DangerousOperationAuthorized (AUDIT) |
 | **Depends on** | Organization (scope targets) |
 
 ### Workforce
 
 | | |
 | --- | --- |
-| **Owns** | Employee profiles, PersonalShift (attendance), employment assignments to outlets |
-| **Does not own** | CashShift, POS auth grants (Identity) |
-| **Key concepts** | Employee, PersonalShift |
-| **Commands in** | AssignEmployee, OpenPersonalShift |
-| **Facts out** | PersonalShiftOpened |
-| **Depends on** | Organization, Identity |
+| **Owns** | Employee profiles, PersonalShift (attendance), employment assignments; recruiting / learning / assessment aggregates (ADR-0023) |
+| **Does not own** | CashShift, POS auth grants (Identity); Catalog/Menu/Recipe/Allergen SoT; payroll/compensation SoT |
+| **Key concepts** | Candidate ≠ Employee ≠ User; Vacancy, Application, InterviewQuestionnaire, WrittenAnswer, VoiceAnswer; Course/Module/Lesson, TrainingAssignment; QuestionBank, ExamVersion, AssessmentAttempt; human employment decision; assessment media policy (≠ ADR-0021 zero-retention) |
+| **Commands in** | AssignEmployee, OpenPersonalShift, RecordHumanEmploymentDecision, StartAssessmentAttempt |
+| **Facts out** | PersonalShiftOpened, EmploymentDecisionRecorded (AUDIT), AssessmentAttemptCompleted |
+| **Depends on** | Organization, Identity, Catalog/Menu/Recipe/Allergen **projections** (read), Privacy (ADR-0015) |
 
 ### Catalog
 
@@ -80,8 +80,8 @@ LegalEntity is fiscal/legal — **not** part of menu inheritance.
 | | |
 | --- | --- |
 | **Owns** | RecipeVersion graph, RecipeLine, RecipeVariantBinding, Preparation specs, materialization mode; **derived** cost revisions / CostQuote artifacts |
-| **Does not own** | ProductionBatch stock effects (Inventory), sale prices |
-| **Key concepts** | RecipeVersion, RecipeGraphResolver (future), EXPLODE_RECIPE_ON_SALE / CONSUME_FINISHED_ITEM, CostQuote |
+| **Does not own** | ProductionBatch stock effects (Inventory), sale prices; Allergen resolution results (Allergen Resolver consumes this graph — ADR-0024) |
+| **Key concepts** | RecipeVersion, RecipeGraphResolver (future), Effective Recipe (for modifiers), EXPLODE_RECIPE_ON_SALE / CONSUME_FINISHED_ITEM, CostQuote |
 | **Commands in** | ActivateRecipeVersion, RecalculateCost (derived) |
 | **Facts out** | RecipeVersionActivated, CostRevisionRecorded |
 | **Depends on** | Catalog, Units, Inventory facts (read for valuation) |
@@ -225,8 +225,8 @@ Costing writes **only derived revisions**, never invents inventory movements (AD
 | | |
 | --- | --- |
 | **Owns** | PII Vault access policies (logical boundary), EgressGate decisions, GovernmentRequestCase; support/break-glass audit plane (distinct) |
-| **Does not own** | Business aggregates; Professional Account detailed model (ADR PENDING); Workforce/Assessment media policy (ADR PENDING) |
-| **Key concepts** | Tenant isolation; exceptional professional cross-BG grants; Vietnam-primary preferred residency; attributable Egress Gate (ADR-0015 **Accepted**) |
+| **Does not own** | Business aggregates; Professional Account product UI (ADR-0022); Workforce/Assessment product UI (ADR-0023) |
+| **Key concepts** | Tenant isolation; exceptional professional cross-BG grants (ADR-0022); Vietnam-primary preferred residency; attributable Egress Gate; Voice Interaction audio ≠ assessment media (ADR-0015 + ADR-0021 / ADR-0023) |
 | **Commands in** | ApproveEgress, OpenGovernmentRequestCase |
 | **Facts out** | AUDIT events |
 | **Depends on** | Identity, Organization |
@@ -246,7 +246,7 @@ Costing writes **only derived revisions**, never invents inventory movements (AD
 | --- | --- |
 | **Owns** | Recommendations, detector/forecast artifacts, EvidenceBundle assembly, ModelGateway **contract** usage, ApprovedModelRegistry **contract** |
 | **Does not own** | Orders, Inventory, Payments, Purchasing, or any Operational Core ledger |
-| **Key concepts** | Tenant-scoped projections → EvidenceBuilder → ModelGateway → Recommendation → human accept → **normal domain command** |
+| **Key concepts** | Tenant-scoped projections → EvidenceBuilder → ModelGateway → Recommendation → human accept → **normal domain command**; employment assists only (ADR-0023); allergen via structured resolver (ADR-0024) |
 | **Commands in** | GenerateRecommendation (read-side), RecordRecommendationDecision (accept/reject metadata) |
 | **Facts out** | RecommendationIssued, RecommendationAccepted/Rejected (AUDIT / DOMAIN as applicable) |
 | **Depends on** | Reporting projections, Privacy/Egress (ADR-0015), Operational Core (**read only**) |
@@ -265,7 +265,7 @@ No new deployable/microservice required by this map row.
 | --- | --- |
 | **Owns** | Voice interaction sessions (when implemented), speech provider adapter **interface**, translation/preview orchestration |
 | **Does not own** | Order/Inventory/Payment ledgers; AuthorizationPolicy |
-| **Key concepts** | PTT/VAD → server ASR → router → classes A Informational / B Translation / C Command preview / D Critical command |
+| **Key concepts** | PTT/VAD → server ASR → router → classes A Informational / B Translation / C Command preview / D Critical command; allergen via ADR-0024 before explain/translate; assessment audio ≠ this path (ADR-0023) |
 | **Commands in** | StartVoiceCapture, SubmitVoiceUtterance, ConfirmVoiceCommandPreview (C/D only mutate via normal app commands) |
 | **Facts out** | VoiceInteractionRecorded (AUDIT as applicable) |
 | **Depends on** | ModelGateway / SpeechProviderAdapter (ADR-0020), Identity/RBAC, Catalog/Menu resolvers, application commands |
@@ -293,6 +293,8 @@ Voice and Intelligence remain **supporting / read-side** capabilities, not owner
 | **Loyalty** | LoyaltyRule | ≠ Promotion |
 | **Delivery** | Fulfillment tasks | |
 | **Migration** | See dedicated Migration module above | ADR-0011 **Accepted** |
+| **Professional Account** | ProfessionalProfile, ClientAccessGrant, future ProfessionalOrganization | ADR-0022 **Accepted** (Identity path; no shared tenant) |
+| **Allergen & Dietary Resolver** | Derived resolution over Ingredient/Recipe/Effective Recipe/Modifiers | ADR-0024 **Accepted** (does not own recipe composition) |
 | **Central Production** | Multi-outlet production plans | |
 | **Operational / Production Intelligence** | Recommendations, EvidenceBundle, ModelGateway contract | ADR-0006 + ADR-0020 |
 | **Voice & Multilingual Interaction** | Speech/translation UX path | ADR-0021 |

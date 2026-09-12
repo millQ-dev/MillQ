@@ -4,7 +4,7 @@
 - **Date:** 2026-09-12
 - **Accepted:** 2026-09-12 (PO strategic review — hosting delta)
 - **Decision owners:** Product Owner and System Architect
-- **Related:** Architecture v1.3, [ADR-0006](ADR-0006-production-intelligence-boundary.md) (Accepted — **not superseded**), [ADR-0015](ADR-0015-privacy-residency-security.md), [ADR-0018](ADR-0018-offline-multiplatform-runtime.md), [ADR-0019](ADR-0019-economic-facts-contribution-margin.md)
+- **Related:** Architecture v1.3, [ADR-0006](ADR-0006-production-intelligence-boundary.md) (Accepted — **not superseded**), [ADR-0015](ADR-0015-privacy-residency-security.md), [ADR-0018](ADR-0018-offline-multiplatform-runtime.md), [ADR-0019](ADR-0019-economic-facts-contribution-margin.md), [ADR-0023](ADR-0023-workforce-recruiting-learning-assessment.md) (Accepted — no autonomous employment decisions), [ADR-0024](ADR-0024-allergen-dietary-constraint-resolution.md) (Accepted — structured allergen query only)
 
 ## Context
 
@@ -67,9 +67,13 @@ Specific models/providers (OpenAI, Kimi, Qwen*, etc., including **Qwen3.8-27B-FP
 - AI **cannot** mutate Operational Core directly.
 - Path: `Recommendation → human accept/reject → normal domain command → audit` (ADR-0006).
 
-### Explicitly out of this ADR / future risk-classified
+### Explicitly out of this ADR / risk-classified employment
 
-Employee scoring, termination support, customer profiling, and similar high-risk capabilities are **separate future** risk-classified decisions — not implied by accepting this gateway.
+Material employment decisions remain human-controlled per [ADR-0023](ADR-0023-workforce-recruiting-learning-assessment.md): ModelGateway / Intelligence **MAY** score, classify, detect gaps, recommend, and explain; they **MUST NOT** autonomously hire, reject, terminate, reduce compensation, remove shifts, or make equivalent material employment decisions.
+
+Allergen / dietary answers (when asked via Intelligence) must query the structured resolver per [ADR-0024](ADR-0024-allergen-dietary-constraint-resolution.md) — models must **not** invent ingredients or override `UNKNOWN`.
+
+Customer profiling and similar high-risk capabilities remain **separate future** risk-classified decisions — not implied by accepting this gateway.
 
 ## Consequences
 
