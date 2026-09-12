@@ -2,7 +2,7 @@
 
 - **Status:** Proposed (Architecture v1.3)
 - **Date:** 2026-09-04
-- **Related:** Architecture v1.3, ADR-0011, ADR-0012, Identity module
+- **Related:** Architecture v1.3, ADR-0011, ADR-0012, Identity module, ADR-0020, ADR-0021
 
 ## Context
 
@@ -25,6 +25,7 @@ MillQ operates for Vietnam restaurants under a Vietnam-oriented company context 
 
 - Any cross-border processor/subprocessor flow requires an explicit egress control (purpose, legal basis ref, destination, approval).
 - Default for uncleared environments: **synthetic-data-only** or blocked egress.
+- Applies to external model / speech providers used by Intelligence or Voice (ADR-0020, ADR-0021).
 
 ### Controller / processor roles
 
@@ -41,10 +42,21 @@ MillQ operates for Vietnam restaurants under a Vietnam-oriented company context 
 - No silent bulk export of PII/operational data outside this plane.
 - Distinct from ordinary AuditRecord of business actions.
 
+### Voice / speech data paths (references — do not duplicate full Voice ADR)
+
+Rules above cover speech as a data-processing path. Clarifications (see ADR-0021 for product behavior):
+
+- **Raw audio** and **transcripts** are regulated/sensitive processing paths under the Privacy Control Plane.
+- **Vietnam-primary processing** is the target for primary speech/Intelligence processing (same residency intent as other regulated data).
+- External speech/model providers require the **Egress Gate**.
+- Architecture must support **zero-retention of raw audio by default** after processing; longer transcript retention only via explicit policy.
+- **No biometric voice identification / voiceprint** by default.
+
 ## Consequences
 
 - Intelligence and analytics prefer aggregated / non-PII evidence; PII access is exceptional and audited (ADR-0006 remains).
 - Architecture acceptance does **not** equal PDPA/cybersecurity certification.
+- Model/speech execution details: ADR-0020, ADR-0021 — they do not weaken this plane.
 
 ## Alternatives considered
 

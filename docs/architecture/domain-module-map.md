@@ -3,7 +3,7 @@
 - **Status:** Proposed reference with Architecture v1.3
 - **Date:** 2026-09-04
 - **Supersedes:** Architecture v1.2 module map naming for extended modules
-- **Authority:** [`architecture-v1.3.md`](architecture-v1.3.md), ADR-0008 (Accepted), ADR-0011…0019 (Proposed)
+- **Authority:** [`architecture-v1.3.md`](architecture-v1.3.md), ADR-0008 (Accepted), ADR-0011…0021 (Proposed)
 - **Note:** Origin hosting ADR-0004 is unrelated.
 
 Each row is an internal module boundary inside the **modular monolith**.
@@ -240,6 +240,44 @@ Costing writes **only derived revisions**, never invents inventory movements (AD
 | **Key concepts** | Projection, KpiSnapshot, Action Center / Compliance Center read-sides |
 | **Depends on** | Fact feed, module facts (read) |
 
+### Production Intelligence (supporting — ADR-0006 + ADR-0020)
+
+| | |
+| --- | --- |
+| **Owns** | Recommendations, detector/forecast artifacts, EvidenceBundle assembly, ModelGateway **contract** usage, ApprovedModelRegistry **contract** |
+| **Does not own** | Orders, Inventory, Payments, Purchasing, or any Operational Core ledger |
+| **Key concepts** | Tenant-scoped projections → EvidenceBuilder → ModelGateway → Recommendation → human accept → **normal domain command** |
+| **Commands in** | GenerateRecommendation (read-side), RecordRecommendationDecision (accept/reject metadata) |
+| **Facts out** | RecommendationIssued, RecommendationAccepted/Rejected (AUDIT / DOMAIN as applicable) |
+| **Depends on** | Reporting projections, Privacy/Egress (ADR-0015), Operational Core (**read only**) |
+
+```text
+Operational Core
+  → Intelligence projections / EvidenceBuilder
+  → ModelGateway
+```
+
+No new deployable/microservice required by this map row.
+
+### Voice & Multilingual Interaction (supporting — ADR-0021)
+
+| | |
+| --- | --- |
+| **Owns** | Voice interaction sessions (when implemented), speech provider adapter **interface**, translation/preview orchestration |
+| **Does not own** | Order/Inventory/Payment ledgers; AuthorizationPolicy |
+| **Key concepts** | PTT/VAD → server ASR → router → translation / VoiceCommandPreview / EvidenceBuilder path |
+| **Commands in** | StartVoiceCapture, SubmitVoiceUtterance, ConfirmVoiceCommandPreview |
+| **Facts out** | VoiceInteractionRecorded (AUDIT as applicable) |
+| **Depends on** | ModelGateway / SpeechProviderAdapter (ADR-0020), Identity/RBAC, Catalog/Menu resolvers, application commands |
+
+```text
+Voice & Multilingual Interaction
+  → ModelGateway / SpeechProviderAdapter
+  → existing application commands
+```
+
+Voice and Intelligence remain **supporting / read-side** capabilities, not owners of Orders/Inventory/Payments truth.
+
 ---
 
 ## Extensible modules (boundaries only until scheduled)
@@ -256,7 +294,8 @@ Costing writes **only derived revisions**, never invents inventory movements (AD
 | **Delivery** | Fulfillment tasks | |
 | **Migration** | See dedicated Migration module above | ADR-0011 |
 | **Central Production** | Multi-outlet production plans | |
-| **Operational / Production Intelligence** | Recommendations, EvidenceBundle | ADR-0006 |
+| **Operational / Production Intelligence** | Recommendations, EvidenceBundle, ModelGateway contract | ADR-0006 + ADR-0020 |
+| **Voice & Multilingual Interaction** | Speech/translation UX path | ADR-0021 |
 | **Jurisdiction** | JurisdictionProfile versions | ADR-0012 |
 
 **Procurement** is the purchasing vertical for Block C (GoodsReceipt). Named distinctly from Supplier Management master data.
@@ -276,10 +315,13 @@ Procurement ──posts──► Inventory
         ↓
 Orders → Production Routing, Payments, Cash Management, Delivery
         ↓
-Reporting, Production Intelligence (read-only + recommendations)
+Reporting
+        ↓
+Production Intelligence (projections / EvidenceBuilder → ModelGateway)   [supporting]
+Voice & Multilingual Interaction → ModelGateway / SpeechAdapter → commands [supporting]
 ```
 
-Audit observes all. Integrations and Fiscalization at the edge.
+Audit observes all. Integrations and Fiscalization at the edge. Intelligence and Voice **do not** own Core ledgers.
 
 ---
 

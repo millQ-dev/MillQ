@@ -1,11 +1,11 @@
 # MillQ Current State
 
-**Checkpoint:** Architecture v1.3 alignment **in progress** (docs/ADR Proposed)  
+**Checkpoint:** Architecture v1.3 alignment **pending strategic acceptance** (PR #9)  
 **Canonical host:** Cursor Origin (`https://origin.cursor.com/millqdev/MillQ.git`)  
 **Backup host:** GitHub `https://github.com/millQ-dev/MillQ.git` (mirror only)  
-**Origin main (alignment base):** `46f01ec`  
-**Block C:** **Merged** (PR #7 → `a5e84b0`)  
-**Updated:** 2026-09-04
+**Origin main:** `46f01ec`  
+**Block C:** **Merged** (PR #7 → `a5e84b0`) and **v1.3-compatible**  
+**Updated:** 2026-09-12
 
 ## Runtime / CI / backup
 
@@ -13,12 +13,12 @@
 | --- | --- |
 | Foundation Operational Core | Merged |
 | Architecture v1.2 | **Accepted / Merged** |
-| Block C Goods Receipt vertical | **Merged** (PR #7 → `a5e84b0`) |
-| Architecture v1.3 alignment | **Pending acceptance** — docs + ADR-0011…0019 Proposed |
-| New application verticals | **STOP** until v1.3 accepted |
+| Block C Goods Receipt vertical | **Merged** + v1.3-compatible |
+| Architecture v1.3 alignment | **PR #9 pending strategic acceptance** — ADR-0011…0021 Proposed |
+| New application verticals | **STOP** until architecture acceptance |
 | Origin CI | **Attached** — Depot |
 | GitHub Actions | Dormant copies only |
-| GitHub backup | Verify lag independently (last known drift possible) |
+| GitHub backup | Verify lag independently |
 
 ## Accepted decisions
 
@@ -28,7 +28,7 @@
 | ADR-0002 | Accepted | Money, quantity, units |
 | ADR-0003 | Accepted | Yield, preparations, moving-average costing |
 | ADR-0004 | Accepted | Origin SoT; GitHub backup |
-| ADR-0006 | Accepted | Production Intelligence boundary |
+| ADR-0006 | Accepted | Production Intelligence boundary (**not superseded**) |
 | ADR-0007 | Accepted | Foundation scaffolding |
 | ADR-0008 | Accepted | Domain Boundaries Architecture v1.2 |
 | ADR-0009 | Accepted | Catalog, Units, SupplierItem |
@@ -47,6 +47,8 @@
 | ADR-0017 | Floor Plan & Table Engine |
 | ADR-0018 | Offline Multi-Platform Client Runtime |
 | ADR-0019 | Economic Facts & Contribution Margin |
+| ADR-0020 | Production Intelligence Execution & Model Gateway |
+| ADR-0021 | Voice & Multilingual Interaction Boundary |
 
 ## Architecture baseline
 
@@ -58,19 +60,20 @@
 ## What exists in code
 
 - Block C: Goods Receipt → movements → balance → CostQuote → GoodsReceived fact mirror
-- No Migration adapters, fiscal providers, POS/FloorPlan, Grab/Shopee, or sale write-off
+- No Migration adapters, fiscal providers, POS/FloorPlan, Grab/Shopee, sale write-off, ModelGateway, ASR/TTS, or GPU runtime
 
 ## Explicitly not started (implementation)
 
-- Block D+ / Recipes → Sale write-off → Food Cost (candidate after v1.3 + PO launch)
+- Next vertical candidate after architecture acceptance + PO launch: **Recipes → Sale write-off → Food Cost**
 - Migration Core scaffolding & source adapters
 - Fiscal provider adapters
 - POS / FloorPlan / Grab / Shopee
+- ModelGateway / Intelligence runtime / Voice runtime
 - Intelligence algorithms
 
 ## Next recommended sequence
 
-1. ~~Block C~~ done  
-2. **Accept Architecture v1.3** (strategic review of Proposed ADRs)  
+1. ~~Block C~~ done (merged, v1.3-compatible)  
+2. **Strategic acceptance of Architecture v1.3** (Proposed ADRs including 0020/0021) — PR #9 **DO NOT MERGE** until PO accepts  
 3. PO launches next application vertical (candidate: Recipes → Sale write-off → Food Cost)  
-4. Only then implement that vertical — **do not start in the v1.3 alignment PR**  
+4. Only then implement that vertical — **STOP** until then  

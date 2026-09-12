@@ -2,7 +2,7 @@
 
 - **Status:** Proposed (Architecture v1.3)
 - **Date:** 2026-09-04
-- **Related:** Architecture v1.3, offline-foundation.md, ADR-0003, ADR-0010, ADR-0014
+- **Related:** Architecture v1.3, offline-foundation.md, ADR-0003, ADR-0010, ADR-0014, ADR-0020, ADR-0021
 
 ## Context
 
@@ -21,8 +21,12 @@ Before POS implementation, the following are architectural requirements:
 | Conflicts / reconciliation | Business chronology (ADR-0003) outranks upload order; never fabricate `businessTime` |
 | Device gateway | Edge path for print/KDS peripherals without baking routing into UI |
 | Fiscal offline | Queue submissions; no fake government acceptance (ADR-0014) |
+| AI / Voice offline | POS / KDS / printing remain fully usable without AI or voice connectivity (ADR-0020, ADR-0021) |
+| Local models | No mandatory local LLM/ASR on restaurant device for MVP; any future tiny local recognizer is a **separate future decision** |
 
 `offline-foundation.md` remains the operational behavior reference; this ADR elevates multi-platform runtime to a decision gate for POS.
+
+Voice and Production Intelligence inference are **server-side MVP capabilities** (centralized MillQ-controlled infrastructure per ADR-0020/0021), not prerequisites for offline POS.
 
 ## Consequences
 
