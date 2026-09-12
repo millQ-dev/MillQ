@@ -28,7 +28,7 @@ Architecture v1.3 baseline for resumed implementation
 
 | Item | State |
 | --- | --- |
-| Origin main tip | `3ff79a2` (Block D1.1 merge PR #25) |
+| Origin main tip | `4546dbe` (Block D1.2A merge PR #27) |
 | Architecture v1.3 merge | `77c6949` (PR #9) |
 | Block C | **Merged** (PR #7 → `a5e84b0`) and **v1.3-compatible** |
 | Architecture v1.3 alignment | **Merged** (PR #9 → `77c6949`) |
@@ -40,7 +40,8 @@ Architecture v1.3 baseline for resumed implementation
 | ADR-0011 | **Accepted** (PR #21 → `cf5398a`) |
 | ADR-0022 / ADR-0023 / ADR-0024 | **Accepted** (PR #23 → `3590147`) |
 | Block D1.1 Recipes & Preparations foundation | **Merged** (PR #25 → `3ff79a2`) |
-| New application verticals (incl. D1.2) | **STOP** until PO launches next vertical |
+| Block D1.2A ProductionBatch domain foundation | **Merged** (PR #27 → `4546dbe`) |
+| New application verticals (incl. D1.2B) | **STOP** until PO launches next vertical |
 
 **Do not** describe Block C as the next vertical. After acceptance, the current candidate is:
 

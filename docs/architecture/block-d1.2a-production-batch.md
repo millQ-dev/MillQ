@@ -1,6 +1,6 @@
 # Block D1.2A Implementation — ProductionBatch Domain Foundation
 
-**Status:** Implemented on feature branch (awaiting independent handoff review #1)  
+**Status:** **Merged** on Origin `main` @ `4546dbe` (PR #27, 2026-09-12)  
 **ADRs:** ADR-0002, ADR-0003, ADR-0008, ADR-0009, ADR-0010 (document ≠ movement)  
 **Autonomy:** Level C  
 **Baseline:** Origin `main` @ `65f4c6f` (after D1.1 merge)
