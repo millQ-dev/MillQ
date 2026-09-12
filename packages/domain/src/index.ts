@@ -68,3 +68,9 @@ export {
   type NormativeYieldInput,
   type ScalableComponent,
 } from './recipe-graph.js';
+export {
+  computeActualYieldRatio,
+  computeYieldVariance,
+  assertDeviationRules,
+  type ProductionDeviationClass,
+} from './production-batch.js';

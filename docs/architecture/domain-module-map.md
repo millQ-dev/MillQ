@@ -80,13 +80,24 @@ LegalEntity is fiscal/legal — **not** part of menu inheritance.
 | | |
 | --- | --- |
 | **Owns** | RecipeVersion graph, RecipeLine, RecipeVariantBinding, Preparation specs, materialization mode; **derived** cost revisions / CostQuote artifacts |
-| **Does not own** | ProductionBatch stock effects (Inventory), sale prices; Allergen resolution results (Allergen Resolver consumes this graph — ADR-0024) |
+| **Does not own** | ProductionBatch stock effects (Inventory), ProductionBatch recording foundation (Production / D1.2A), sale prices; Allergen resolution results (Allergen Resolver consumes this graph — ADR-0024) |
 | **Key concepts** | RecipeSpecification, RecipeVersion, RecipeLine/component; PreparationSpecification + VIRTUAL/STOCK_TRACKED; normative yield; acyclic nested graph (D1.1); RecipeGraphResolver (future), Effective Recipe (for modifiers), CostQuote |
 | **Commands in** | CreateRecipeDraft, PublishRecipeVersion, CreatePreparationDraft, PublishPreparationVersion, ActivateRecipeVersion (future), RecalculateCost (derived, future) |
 | **Facts out** | RecipeVersionActivated (future publish mirror), CostRevisionRecorded (future) |
 | **Depends on** | Catalog, Units, Inventory facts (read for valuation) |
 
 Costing writes **only derived revisions**, never invents inventory movements (ADR-0003, ADR-0006).
+
+### Production (batch recording)
+
+| | |
+| --- | --- |
+| **Owns** | ProductionBatch DRAFT→FINALIZED recording foundation (D1.2A): pinned PreparationVersion, expected vs actual I/O/yield, deviation classification, input line snapshots |
+| **Does not own** | Inventory movements/balances from production (D1.2B / Inventory), recipe/preparation specification truth (Recipes), costing valuation |
+| **Key concepts** | ProductionBatch, ProductionBatchInput; FINALIZED = immutable production fact (not inventory POSTED) |
+| **Commands in** | CreateProductionBatchDraft, UpdateProductionBatchDraft, FinalizeProductionBatch |
+| **Facts out** | ProductionBatchFinalized (audit today; operational feed mirror deferred with D1.2B posting) |
+| **Depends on** | Recipes (PUBLISHED STOCK_TRACKED PreparationVersion), Catalog, Organization (warehouse/tenant) |
 
 ### Menu Configuration
 
@@ -147,12 +158,12 @@ Costing writes **only derived revisions**, never invents inventory movements (AD
 
 | | |
 | --- | --- |
-| **Owns** | InventoryMovement, balances (projection), ProductionBatch stock effects, StockAdjustment, count posting effects |
-| **Does not own** | Purchasing source documents (GoodsReceipt header lives with Purchasing posting coordination — see Block C contract), derived unit cost |
+| **Owns** | InventoryMovement, balances (projection), ProductionBatch **stock effects** (D1.2B+), StockAdjustment, count posting effects |
+| **Does not own** | Purchasing source documents (GoodsReceipt header lives with Purchasing posting coordination — see Block C contract), derived unit cost, ProductionBatch recording foundation without posting (Production / D1.2A) |
 | **Key concepts** | InventoryMovement, warehouse stock projection, explain-balance chain |
-| **Commands in** | ApplyPostedMovements, AdjustStock, CompleteProductionBatch |
+| **Commands in** | ApplyPostedMovements, AdjustStock, CompleteProductionBatch (posting — D1.2B) |
 | **Facts out** | InventoryAdjusted, InventoryConsumed, PreparationProduced |
-| **Depends on** | Catalog, Units, Recipes (expansion rules), Organization |
+| **Depends on** | Catalog, Units, Recipes (expansion rules), Organization, Production (finalized batch refs) |
 
 ### Production Routing
 
