@@ -102,12 +102,12 @@ ADR-0017 **Accepted**: Order does **not** require Table; Floor/Table is optional
 
 ```text
 RestaurantLocation → DiningArea → FloorPlanVersion → Table
-Runtime: TableRuntimeState; optional TableAssignment; optional TableCombination
+Runtime: TableRuntimeState; Floor/Table-owned optional TableAssignment (refs OrderId); optional TableCombination
 ```
 
 - Floor plans versioned; no silent rewrite of historical table/plan context.
 - TableRuntimeState is operational only — not settlement/inventory SoT.
-- Assignment/move is explicit + auditable; multiple Orders/Checks per table allowed.
+- Assignment/move is explicit + auditable (Floor/Table owns TableAssignment; Orders does not); multiple Orders/Checks per table allowed.
 - Combinations must not destroy Table identities; do not force `Order.table_id` as sole model.
 - Reservations out of scope. Offline per ADR-0018. Not coupled to ProductionRoute.
 - Accept = boundaries only (no floor editor / POS / reservation product).
