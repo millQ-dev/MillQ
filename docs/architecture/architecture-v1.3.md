@@ -4,9 +4,9 @@
 - **Date:** 2026-09-04
 - **Canonical host:** Cursor Origin
 - **Base:** Architecture [v1.2](architecture-v1.2.md) (Accepted) + Block C merged @ `a5e84b0` / main tip at alignment start `46f01ec`
-- **Related ADRs:** ADR-0001…0004, 0006…0010, 0012, 0013 (Accepted); ADR-0020, ADR-0021 (Accepted); ADR-0011, 0014…0019 (Proposed)
+- **Related ADRs:** ADR-0001…0004, 0006…0010, 0012, 0013, 0015, 0019 (Accepted); ADR-0020, ADR-0021 (Accepted); ADR-0011, 0014, 0016…0018 (Proposed)
 - **Module map:** [`domain-module-map.md`](domain-module-map.md)
-- **Authority command:** KiU correcting command after gap-analysis (PO / strategic architecture); PO Intelligence + Voice directions (2026-09-12); PO ACCEPT ADR-0012/0013 (2026-09-12)
+- **Authority command:** KiU correcting command after gap-analysis (PO / strategic architecture); PO ACCEPT ADR-0015/0019 deltas (2026-09-12)
 
 ## 1. Purpose
 
@@ -15,7 +15,7 @@ Architecture v1.3 **extends** v1.2 with boundaries that must be frozen **before*
 ```text
 v1.2 domain boundaries (Accepted)
         +
-v1.3 deltas (this document + ADR-0011, 0014…0019 Proposed + ADR-0012/0013/0020/0021 Accepted)
+v1.3 deltas (this document + ADR-0011, 0014, 0016…0018 Proposed + ADR-0012/0013/0015/0019/0020/0021 Accepted)
         =
 Architecture v1.3 baseline for resumed implementation
 ```
@@ -55,12 +55,12 @@ Modular monolith; TypeScript monorepo; Origin SoT; ADR-0002/0003 measurement & c
 | JurisdictionProfile ≠ provider adapters | ADR-0012 (**Accepted**) |
 | Payment non-custody (no merchant/customer funds) | ADR-0013 (**Accepted**) |
 | Vietnam fiscalization architecture boundary now | ADR-0014 |
-| PII Vault, VN-primary residency, egress gate, MillQ LLC boundary | ADR-0015 |
+| PII Vault, VN-primary residency, egress gate, MillQ LLC boundary | ADR-0015 (**Accepted**) |
 | Order Settlement / Split Bill | ADR-0016 |
 | FloorPlan / Table Engine | ADR-0017 |
 | Offline multi-platform client runtime | ADR-0018 |
-| Economic facts / contribution margin / channel profit | ADR-0019 |
-| Security Control Plane / GovernmentRequestCase | ADR-0015 §Security |
+| Economic facts / contribution margin / channel profit | ADR-0019 (**Accepted**) |
+| Security Control Plane / GovernmentRequestCase | ADR-0015 §Security (**Accepted**) |
 | Production Intelligence Execution / ModelGateway | ADR-0020 (does **not** supersede ADR-0006) |
 | Voice & Multilingual Interaction | ADR-0021 |
 
@@ -132,14 +132,15 @@ Do **not** invent Vietnam legal text in ADRs.
 
 ## 9. Privacy, residency, egress, LLC
 
-Architecture **now** must include:
+Architecture includes (ADR-0015 **Accepted** — single control-plane ADR, not split):
 
-- Vietnam PII Vault (sensitive personal data isolation)
-- Vietnam-primary regulated operational data residency intent
-- Cross-border Egress Gate for processor/subprocessor flows
-- Controller/processor role distinctions (conceptual)
-- Synthetic-data-only paths for non-cleared environments
-- MillQ Vietnam foreign-owned LLC as legal/operating boundary context (ADR-0015)
+- Tenant / Business Group operational isolation; professional cross-BG access is exceptional (detailed Professional Account ADR PENDING)
+- Mutations in exactly one selected client context; cross-client mutation prohibited by default
+- PII Vault as **logical** boundary (modular monolith OK for MVP; no mandatory separate deployable)
+- Vietnam-primary **preferred/default** residency — not a claim that data never crosses borders; cross-border only via Egress Gate
+- Egress decisions attributable (purpose, data categories, provider, destination, retention, approved service, tenant context, audit)
+- Support/break-glass ≠ GovernmentRequestCase; scoped, reasoned, audited, not permanent super-admin
+- Voice Interaction audio (zero-retention default) ≠ assessment/interview media (future Workforce/Assessment policy — ADR PENDING)
 
 Exact legal qualification / certificates = **LEGAL GATE**, not architecture invent.
 
@@ -187,7 +188,21 @@ Adapters do not encode KiU business rules. Historical import uses explicit A/B/C
 
 ## 14. Economic facts
 
-Beyond CostQuote: ContributionMargin (dish), ChannelProfit, and related certainty — **derived read models**, never `product.cost` (ADR-0019). Intelligence consumes them under ADR-0006 / ADR-0020.
+Economic metrics are **derived read-side** facts (ADR-0019 **Accepted**), never Operational Core mutable truth and never `product.cost`.
+
+Conceptual ladder:
+
+```text
+Gross Sales → (restaurant-borne discounts/promotions) → Revenue Basis / Net Sales
+  → COGS → Gross Profit → Direct Variable Selling Costs → Contribution Margin
+```
+
+- COGS from historical sale/write-off/recipe costing via CostQuote/history.
+- MVP Direct Variable Costs are typed components (packaging, payment fee, channel commission, …); rent/payroll/overhead excluded from MVP CM.
+- Certainty/provenance per component; UNKNOWN ≠ silent zero; no false exact CM.
+- Original currency preserved; FX only with explicit rate/source/time/reporting currency.
+- Owner vs Accountant may use different views over the **same** facts.
+- Tax/revenue treatment remains JurisdictionProfile-compatible (ADR-0012); Intelligence consumes under ADR-0006 / ADR-0020.
 
 ## 15. Production Intelligence Execution / ModelGateway (supporting)
 

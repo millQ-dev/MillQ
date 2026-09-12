@@ -5,7 +5,7 @@
 **Backup host:** GitHub `https://github.com/millQ-dev/MillQ.git` (mirror only)  
 **Accept PR:** https://cursor.com/codebase/millqdev/MillQ/pull/11 — **merged** (`cf3375fc18aa77e29a3f57291c993677acfa4b38`)  
 **Architecture v1.3 PR:** https://cursor.com/codebase/millqdev/MillQ/pull/9 — **merged** @ `77c6949`  
-**Updated:** 2026-09-12
+**Updated:** 2026-09-12 (ADR-0015 / ADR-0019 Accept PR pending)
 
 ## Runtime / CI / backup
 
@@ -36,6 +36,8 @@
 | ADR-0010 | Accepted | Document posting & correction |
 | ADR-0012 | Accepted | JurisdictionProfile vs Provider Adapters |
 | ADR-0013 | Accepted | Payment Non-Custody Boundary |
+| ADR-0015 | Accepted | Privacy, Residency, Egress, LLC & Security Control Plane |
+| ADR-0019 | Accepted | Economic Facts & Contribution Margin |
 | ADR-0020 | Accepted | Production Intelligence Execution & Model Gateway |
 | ADR-0021 | Accepted | Voice & Multilingual Interaction Boundary |
 
@@ -45,11 +47,9 @@
 | --- | --- |
 | ADR-0011 | Migration Architecture |
 | ADR-0014 | Vietnam Fiscalization Boundary |
-| ADR-0015 | Privacy, Residency, Egress, LLC & Security Control Plane |
 | ADR-0016 | Order Settlement & Split Bill |
 | ADR-0017 | Floor Plan & Table Engine |
 | ADR-0018 | Offline Multi-Platform Client Runtime |
-| ADR-0019 | Economic Facts & Contribution Margin |
 
 ### Forward constraint for future ADR-0016 (not an Accept of 0016)
 
@@ -81,5 +81,5 @@ A recorded **external** deposit/prepayment (allowed under ADR-0013) **must not**
 1. ~~Block C~~ done  
 2. ~~Architecture v1.3 alignment PR #9~~ merged  
 3. ~~ADR-0012 / ADR-0013 Accept PR #11~~ **merged** @ `cf3375f`  
-4. Continue PO review of remaining Proposed ADRs (next packet: **ADR-0015**, **ADR-0019**)  
+4. Continue PO review of remaining Proposed ADRs (0011, 0014, 0016–0018)  
 5. Application verticals remain **STOP** until PO launch  
