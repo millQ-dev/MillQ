@@ -55,3 +55,16 @@ export {
   type CostQuote,
   type CostStreamState,
 } from './moving-average.js';
+export {
+  findCompositionCycle,
+  assertAcyclicComposition,
+  computeNormativeYieldRatio,
+  scaleComponentsForBatch,
+  batchScalePreservesUnitRatios,
+  normalizeToBaseUnit,
+  factorToBaseUnit,
+  assertSameDimensionCompatibleUnits,
+  assertPositiveQuantity,
+  type NormativeYieldInput,
+  type ScalableComponent,
+} from './recipe-graph.js';

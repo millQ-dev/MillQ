@@ -28,7 +28,8 @@
 | ADR-0017 | **Accepted** (PR #19 → `1f683dc`) |
 | ADR-0011 | **Accepted** (PR #21 → `cf5398a`) |
 | ADR-0022 / ADR-0023 / ADR-0024 | **Accepted** (PR #23 → `3590147`) |
-| New application verticals | **STOP** until PO launches next vertical |
+| Block D1.1 Recipes & Preparations foundation | **In review** (docs+domain; no sales/write-off) |
+| New application verticals beyond D1.1 scope | **STOP** until PO launches next slice |
 | Origin CI | **Attached** — Depot |
 | GitHub Actions | Dormant copies only |
 | GitHub backup | Post-merge Origin→GitHub via **MillQ Origin Backup** App |
@@ -95,12 +96,14 @@ Structured Effective Recipe resolution; `UNKNOWN` never silently SAFE; AI/voice 
 ## What exists in code
 
 - Block C: Goods Receipt → movements → balance → CostQuote → GoodsReceived fact mirror
-- No Migration adapters, fiscal providers, POS/FloorPlan, Grab/Shopee, sale write-off, ModelGateway, ASR/TTS, or GPU runtime
+- Block D1.1 (this PR): RecipeSpecification / RecipeVersion / PreparationSpecification with VIRTUAL|STOCK_TRACKED, nested graph validation, normative yield — **no** ProductionBatch / sale write-off
+- No Migration adapters, fiscal providers, POS/FloorPlan, Grab/Shopee, ModelGateway, ASR/TTS, or GPU runtime
 - No Professional Account / Workforce recruiting / Allergen Resolver application code
 
 ## Explicitly not started (implementation)
 
-- Next vertical candidate after PO launch: **Recipes → Sale write-off → Food Cost**
+- D1.1 beyond foundation: ProductionBatch / actual yield / production inventory movements
+- Next vertical slices after PO: **Sale write-off → Food Cost**
 - Migration Core scaffolding & source adapters
 - Fiscal provider adapters
 - POS / FloorPlan / Grab / Shopee
@@ -114,7 +117,8 @@ Structured Effective Recipe resolution; `UNKNOWN` never silently SAFE; AI/voice 
 
 1. ~~Block C~~ done  
 2. ~~Architecture v1.3 alignment~~ merged  
-3. ~~ADR-0011…0019~~ **Accepted** (PR #21 → `cf5398a`)  
-4. ~~ADR-0022 / ADR-0023 / ADR-0024~~ **Accepted** (PR #23 → `3590147`)  
-5. Application verticals remain **STOP** until PO launch  
-6. Review policy: PR #23 used standard handoff review; **NEXT substantive PR requires COMPLETE INDEPENDENT FULL-DIFF REVIEW** before merge  
+3. ~~ADR-0011…0024~~ **Accepted**  
+4. Block D1.1 Recipes & Preparations foundation — **await full-diff strategic review / merge**  
+5. Further application slices remain **STOP** until PO launch  
+6. Review policy: **THIS PR requires COMPLETE INDEPENDENT FULL-DIFF REVIEW** before merge  
+
