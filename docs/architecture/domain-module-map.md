@@ -114,12 +114,12 @@ Costing writes **only derived revisions**, never invents inventory movements (AD
 
 | | |
 | --- | --- |
-| **Owns** | Order, OrderLine, modifiers on lines, commercial snapshots, lifecycle; optional TableAssignment; SettlementGroup / Check / CheckLineAllocation coordination |
-| **Does not own** | Payments, FiscalDocument, kitchen ticket state, inventory movements, FloorPlan geometry |
+| **Owns** | Order, OrderLine, modifiers on lines, commercial snapshots, lifecycle; SettlementGroup / Check / CheckLineAllocation coordination |
+| **Does not own** | Payments, FiscalDocument, kitchen ticket state, inventory movements, FloorPlan geometry, TableAssignment / TableRuntimeState |
 | **Key concepts** | Order (table optional), OrderLine snapshot, SettlementGroup, Check, CheckLineAllocation, PaymentAllocation (ADR-0016 **Accepted**: Order ≠ Settlement; completion = allocated coverage; no cross-LE SettlementGroup) |
 | **Commands in** | OpenOrder, AddLine, CancelOrder, SendToProduction, OpenSettlement, SplitCheck |
 | **Facts out** | OrderOpened, OrderItemAdded, OrderCancelled, OrderPaid (signal; payment owned by Payments) |
-| **Depends on** | Menu/Pricing resolvers, Catalog, Organization, Identity, Floor/Table (optional refs) |
+| **Depends on** | Menu/Pricing resolvers, Catalog, Organization, Identity |
 
 ### Payments
 
@@ -202,11 +202,11 @@ Costing writes **only derived revisions**, never invents inventory movements (AD
 
 | | |
 | --- | --- |
-| **Owns** | DiningArea, FloorPlanVersion, Table, TableLayoutObject, TableRuntimeState, TableCombination |
-| **Does not own** | Order content (Orders hold optional TableAssignment) |
-| **Key concepts** | Optional capability `tables.enabled` (Corner/Cafe/Restaurant); versioned FloorPlan; optional TableAssignment; multi-order/table; TableCombination; ADR-0017 **Accepted**; offline per ADR-0018 |
-| **Commands in** | PublishFloorPlan, UpdateTableRuntimeState, AssignOrderToTable, MoveOrderTable, CombineTables |
-| **Facts out** | FloorPlanPublished, TableStateChanged |
+| **Owns** | DiningArea, FloorPlanVersion, Table, TableLayoutObject, TableRuntimeState, TableAssignment, TableCombination |
+| **Does not own** | Order content / Order truth (Orders remain valid independently of Floor/Table) |
+| **Key concepts** | Optional capability `tables.enabled` (Corner/Cafe/Restaurant); versioned FloorPlan; Floor/Table-owned optional TableAssignment (references OrderId); multi-order/table; TableCombination; ADR-0017 **Accepted**; offline per ADR-0018 |
+| **Commands in** | PublishFloorPlan, UpdateTableRuntimeState, AssignOrderToTable, MoveOrderTable, CombineTables, EndTableCombination |
+| **Facts out** | FloorPlanPublished, TableStateChanged, OrderTableAssigned, OrderTableMoved, TableCombinationCreated, TableCombinationEnded |
 | **Depends on** | Organization, PackageEntitlement / OutletCapabilityConfig |
 
 ### Migration

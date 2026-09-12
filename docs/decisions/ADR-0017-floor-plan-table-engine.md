@@ -62,6 +62,7 @@ Also: `Table` / `TableLayoutObject` as layout entities on a plan version.
 ### 6. Table assignment
 
 - Assignment of an Order to a Table is **explicit and optional**.
+- Floor / Table **owns** `TableAssignment` (references `OrderId`); Orders owns no table-assignment state.
 - Moving an Order between tables must be an **explicit auditable command / event**, not a silent foreign-key overwrite.
 
 ### 7. Multiple orders per table
@@ -109,7 +110,25 @@ ADR-0017 acceptance freezes **boundaries and invariants only**. It does **NOT** 
 
 ### Ownership
 
-FloorPlan / Table Engine is an Organization-adjacent or dedicated **Floor / Table** module boundary in the domain map. Orders own optional `TableAssignment` references only.
+Floor / Table module **owns**:
+
+- `DiningArea`
+- `FloorPlanVersion`
+- `Table` / `TableLayoutObject`
+- `TableRuntimeState`
+- `TableAssignment`
+- `TableCombination`
+
+FloorPlan / Table Engine is an Organization-adjacent or dedicated **Floor / Table** module boundary in the domain map.
+
+**Orders owns Order truth only.** Orders must **NOT** own `TableAssignment`.
+
+`TableAssignment` references `OrderId` but remains Floor/Table-owned optional operational association.
+
+This preserves:
+
+- Order does not require Table; and
+- Orders does not depend on Floor/Table internal state.
 
 ## Consequences
 
