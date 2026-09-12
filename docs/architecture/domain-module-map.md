@@ -3,7 +3,7 @@
 - **Status:** Proposed reference with Architecture v1.3
 - **Date:** 2026-09-04
 - **Supersedes:** Architecture v1.2 module map naming for extended modules
-- **Authority:** [`architecture-v1.3.md`](architecture-v1.3.md), ADR-0008 (Accepted), ADR-0012…0016, 0019, 0020, 0021 (Accepted), ADR-0011, 0017, 0018 (Proposed)
+- **Authority:** [`architecture-v1.3.md`](architecture-v1.3.md), ADR-0008 (Accepted), ADR-0012…0016, 0018, 0019, 0020, 0021 (Accepted), ADR-0011, 0017 (Proposed)
 - **Note:** Origin hosting ADR-0004 is unrelated.
 
 Each row is an internal module boundary inside the **modular monolith**.
