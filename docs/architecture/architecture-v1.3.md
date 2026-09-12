@@ -28,11 +28,12 @@ Architecture v1.3 baseline for resumed implementation
 
 | Item | State |
 | --- | --- |
-| Origin main tip | `cf3375f` (ADR-0012/0013 Accept PR #11) |
+| Origin main tip | `4510092` (ADR-0015/0019 Accept PR #13) |
 | Architecture v1.3 merge | `77c6949` (PR #9) |
 | Block C | **Merged** (PR #7 → `a5e84b0`) and **v1.3-compatible** |
 | Architecture v1.3 alignment | **Merged** (PR #9 → `77c6949`) |
 | ADR-0012 / ADR-0013 | **Accepted** (PR #11 → `cf3375f`) |
+| ADR-0015 / ADR-0019 | **Accepted** (PR #13 → `4510092`) |
 | New application verticals | **STOP** until PO launches next vertical |
 
 **Do not** describe Block C as the next vertical. After acceptance, the current candidate is:
