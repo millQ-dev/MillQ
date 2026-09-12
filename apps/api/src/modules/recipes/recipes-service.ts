@@ -1,12 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import type pg from 'pg';
 import {
+  assertPositiveQuantity,
   batchScalePreservesUnitRatios,
   computeNormativeYieldRatio,
   createQuantity,
   findCompositionCycle,
   IncompatibleUnitError,
   InvalidDecimalError,
+  normalizeToBaseUnit,
   scaleComponentsForBatch,
   type UnitDimension,
 } from '@millq/domain';
@@ -65,12 +67,34 @@ function mapDomainQtyError(err: unknown): never {
   throw err;
 }
 
-function assertQuantity(value: string, dimension: UnitDimension, unit: string) {
+function positiveQty(value: string, dimension: UnitDimension, unit: string, label: string) {
   try {
-    return createQuantity(value, dimension, unit);
+    return assertPositiveQuantity(value, dimension, unit, label);
   } catch (err) {
     mapDomainQtyError(err);
   }
+}
+
+function yieldRatioOrThrow(args: {
+  inputQuantity: string;
+  inputUnit: string;
+  inputDimension: UnitDimension;
+  outputQuantity: string;
+  outputUnit: string;
+  outputDimension: UnitDimension;
+}): string {
+  try {
+    return computeNormativeYieldRatio(args);
+  } catch (err) {
+    mapDomainQtyError(err);
+  }
+}
+
+/** Tenant-scoped exclusive lock for preparation-graph mutations (released at COMMIT/ROLLBACK). */
+async function lockTenantRecipeGraph(client: Client, tenantId: string): Promise<void> {
+  await client.query(`SELECT pg_advisory_xact_lock(hashtext('millq-recipes-graph'), hashtext($1::text))`, [
+    tenantId,
+  ]);
 }
 
 export class RecipesService {
@@ -79,14 +103,15 @@ export class RecipesService {
   async createRecipeDraft(raw: unknown) {
     const input = createRecipeDraftSchema.parse(raw);
     await this.assertTenant(input.tenantId);
-    assertQuantity(input.batchSizeQuantity, input.batchSizeDimension, input.batchSizeUnit);
-    await this.validateComponents(input.tenantId, input.components);
+    positiveQty(input.batchSizeQuantity, input.batchSizeDimension, input.batchSizeUnit, 'batch size');
 
     const recipeSpecificationId = randomUUID();
     const recipeVersionId = randomUUID();
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
+      await lockTenantRecipeGraph(client, input.tenantId);
+      await this.validateComponents(input.tenantId, input.components, client);
       await client.query(
         `INSERT INTO recipe_specification (recipe_specification_id, tenant_id, name)
          VALUES ($1,$2,$3)`,
@@ -106,7 +131,7 @@ export class RecipesService {
         ],
       );
       await this.insertRecipeComponents(client, recipeVersionId, input.components);
-      await this.assertPreparationGraphAcyclic(client);
+      await this.assertPreparationGraphAcyclic(client, input.tenantId);
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK');
@@ -119,28 +144,27 @@ export class RecipesService {
 
   async updateRecipeDraft(raw: unknown) {
     const input = updateRecipeDraftSchema.parse(raw);
-    const existing = await this.requireRecipeVersion(input.recipeVersionId);
-    if (existing.status !== 'DRAFT') {
-      throw new PublishedImmutableError(
-        'Cannot silently overwrite a PUBLISHED recipe version; create a new version instead',
-      );
-    }
     if (input.productCost !== undefined || input.recipeCurrentCost !== undefined || input.currentCost !== undefined) {
       throw new DomainValidationError('COST_SOT_FORBIDDEN', 'Mutable recipe/product cost truth is forbidden');
     }
-
-    const batchQty = input.batchSizeQuantity ?? existing.batch_size_quantity;
-    const batchUnit = input.batchSizeUnit ?? existing.batch_size_unit;
-    const batchDim = input.batchSizeDimension ?? existing.batch_size_dimension;
-    assertQuantity(batchQty, batchDim, batchUnit);
 
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
       const locked = await this.lockRecipeVersion(client, input.recipeVersionId);
       if (locked.status !== 'DRAFT') {
-        throw new PublishedImmutableError();
+        throw new PublishedImmutableError(
+          'Cannot silently overwrite a PUBLISHED recipe version; create a new version instead',
+        );
       }
+      const tenantId = await this.tenantForRecipeSpec(client, locked.recipe_specification_id);
+      await lockTenantRecipeGraph(client, tenantId);
+
+      const batchQty = input.batchSizeQuantity ?? locked.batch_size_quantity;
+      const batchUnit = input.batchSizeUnit ?? locked.batch_size_unit;
+      const batchDim = input.batchSizeDimension ?? locked.batch_size_dimension;
+      positiveQty(batchQty, batchDim, batchUnit, 'batch size');
+
       await client.query(
         `UPDATE recipe_version
          SET batch_size_quantity=$2, batch_size_unit=$3, batch_size_dimension=$4
@@ -148,19 +172,13 @@ export class RecipesService {
         [input.recipeVersionId, batchQty, batchUnit, batchDim],
       );
       if (input.components) {
-        const spec = await client.query<{ tenant_id: string }>(
-          `SELECT tenant_id FROM recipe_specification WHERE recipe_specification_id=$1`,
-          [locked.recipe_specification_id],
-        );
-        const tenantId = spec.rows[0]?.tenant_id;
-        if (!tenantId) throw new NotFoundError('Recipe specification not found');
         await this.validateComponents(tenantId, input.components, client);
         await client.query(`DELETE FROM recipe_component WHERE recipe_version_id=$1`, [
           input.recipeVersionId,
         ]);
         await this.insertRecipeComponents(client, input.recipeVersionId, input.components);
       }
-      await this.assertPreparationGraphAcyclic(client);
+      await this.assertPreparationGraphAcyclic(client, tenantId);
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK');
@@ -171,47 +189,58 @@ export class RecipesService {
     return this.getRecipeVersion(input.recipeVersionId);
   }
 
-  /**
-   * Scale draft batch size and component quantities proportionally.
-   * Demonstrates unit-economics invariant: component/batch ratios unchanged.
-   */
   async scaleRecipeDraftBatch(recipeVersionId: string, scaleFactor: string) {
-    const existing = await this.requireRecipeVersion(recipeVersionId);
-    if (existing.status !== 'DRAFT') {
-      throw new PublishedImmutableError('Cannot scale a PUBLISHED recipe version in place');
-    }
-    const components = await this.listRecipeComponents(recipeVersionId);
-    const baseBatch = createQuantity(
-      existing.batch_size_quantity,
-      existing.batch_size_dimension,
-      existing.batch_size_unit,
-    );
-    const scalable = components.map((c) => ({
-      lineNumber: c.line_number,
-      quantity: c.quantity,
-      unit: c.unit,
-      dimension: c.dimension,
-    }));
-    if (!batchScalePreservesUnitRatios(baseBatch, scalable, scaleFactor)) {
-      throw new DomainValidationError('BATCH_SCALE_INVARIANT', 'Batch scale would break unit ratios');
-    }
-    const scaledComponents = scaleComponentsForBatch(scalable, scaleFactor);
-    const scaledBatchValue = createQuantity(
-      // reuse scale via domain helper path
-      scaleComponentsForBatch(
-        [{ lineNumber: 0, quantity: existing.batch_size_quantity, unit: existing.batch_size_unit, dimension: existing.batch_size_dimension }],
-        scaleFactor,
-      )[0]!.quantity,
-      existing.batch_size_dimension,
-      existing.batch_size_unit,
-    );
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const locked = await this.lockRecipeVersion(client, recipeVersionId);
+      if (locked.status !== 'DRAFT') {
+        throw new PublishedImmutableError('Cannot scale a PUBLISHED recipe version in place');
+      }
+      const tenantId = await this.tenantForRecipeSpec(client, locked.recipe_specification_id);
+      await lockTenantRecipeGraph(client, tenantId);
 
-    return this.updateRecipeDraft({
-      recipeVersionId,
-      batchSizeQuantity: scaledBatchValue.value,
-      batchSizeUnit: scaledBatchValue.unit,
-      batchSizeDimension: scaledBatchValue.dimension,
-      components: components.map((c, i) => {
+      const componentRows = await this.listRecipeComponentsTx(client, recipeVersionId);
+      const baseBatch = createQuantity(
+        locked.batch_size_quantity,
+        locked.batch_size_dimension,
+        locked.batch_size_unit,
+      );
+      const scalable = componentRows.map((c) => ({
+        lineNumber: c.line_number,
+        quantity: c.quantity,
+        unit: c.unit,
+        dimension: c.dimension,
+      }));
+      try {
+        if (!batchScalePreservesUnitRatios(baseBatch, scalable, scaleFactor)) {
+          throw new DomainValidationError('BATCH_SCALE_INVARIANT', 'Batch scale would break unit ratios');
+        }
+      } catch (err) {
+        if (err instanceof DomainValidationError) throw err;
+        mapDomainQtyError(err);
+      }
+      const scaledComponents = scaleComponentsForBatch(scalable, scaleFactor);
+      const scaledBatchQty = scaleComponentsForBatch(
+        [
+          {
+            lineNumber: 0,
+            quantity: locked.batch_size_quantity,
+            unit: locked.batch_size_unit,
+            dimension: locked.batch_size_dimension,
+          },
+        ],
+        scaleFactor,
+      )[0]!.quantity;
+
+      await client.query(
+        `UPDATE recipe_version
+         SET batch_size_quantity=$2, batch_size_unit=$3, batch_size_dimension=$4
+         WHERE recipe_version_id=$1 AND status='DRAFT'`,
+        [recipeVersionId, scaledBatchQty, locked.batch_size_unit, locked.batch_size_dimension],
+      );
+      await client.query(`DELETE FROM recipe_component WHERE recipe_version_id=$1`, [recipeVersionId]);
+      const scaledInputs: ComponentInput[] = componentRows.map((c, i) => {
         const scaled = scaledComponents[i]!;
         if (c.component_kind === 'CATALOG_ITEM') {
           return {
@@ -231,8 +260,18 @@ export class RecipesService {
           unit: scaled.unit,
           dimension: scaled.dimension,
         };
-      }),
-    });
+      });
+      await this.validateComponents(tenantId, scaledInputs, client);
+      await this.insertRecipeComponents(client, recipeVersionId, scaledInputs);
+      await this.assertPreparationGraphAcyclic(client, tenantId);
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+    return this.getRecipeVersion(recipeVersionId);
   }
 
   async publishRecipeVersion(recipeVersionId: string) {
@@ -243,14 +282,19 @@ export class RecipesService {
       if (locked.status === 'PUBLISHED') {
         throw new PublishedImmutableError('Recipe version already PUBLISHED');
       }
-      const comps = await client.query(
-        `SELECT 1 FROM recipe_component WHERE recipe_version_id=$1 LIMIT 1`,
-        [recipeVersionId],
-      );
-      if (comps.rowCount === 0) {
+      const tenantId = await this.tenantForRecipeSpec(client, locked.recipe_specification_id);
+      await lockTenantRecipeGraph(client, tenantId);
+      const comps = await this.listRecipeComponentsTx(client, recipeVersionId);
+      if (comps.length === 0) {
         throw new DomainValidationError('EMPTY_RECIPE', 'Cannot publish recipe without components');
       }
-      await this.assertPreparationGraphAcyclic(client);
+      await this.assertReachablePreparationsPublished(
+        client,
+        comps
+          .filter((c) => c.component_kind === 'PREPARATION_VERSION' && c.nested_preparation_version_id)
+          .map((c) => c.nested_preparation_version_id!),
+      );
+      await this.assertPreparationGraphAcyclic(client, tenantId);
       await client.query(
         `UPDATE recipe_version SET status='PUBLISHED', published_at=NOW()
          WHERE recipe_version_id=$1 AND status='DRAFT'`,
@@ -266,7 +310,6 @@ export class RecipesService {
     return this.getRecipeVersion(recipeVersionId);
   }
 
-  /** Create a new DRAFT version copied from a PUBLISHED version (never mutates history). */
   async createNextRecipeVersion(recipeSpecificationId: string) {
     const client = await this.pool.connect();
     try {
@@ -286,6 +329,8 @@ export class RecipesService {
           'Create next version only from PUBLISHED (resolve/publish current DRAFT first)',
         );
       }
+      const tenantId = await this.tenantForRecipeSpec(client, recipeSpecificationId);
+      await lockTenantRecipeGraph(client, tenantId);
       const newId = randomUUID();
       const nextNum = src.version_number + 1;
       await client.query(
@@ -302,21 +347,8 @@ export class RecipesService {
           src.batch_size_dimension,
         ],
       );
-      const comps = await client.query<{
-        line_number: number;
-        component_kind: string;
-        catalog_item_id: string | null;
-        nested_preparation_version_id: string | null;
-        quantity: string;
-        unit: string;
-        dimension: string;
-      }>(
-        `SELECT line_number, component_kind, catalog_item_id, nested_preparation_version_id,
-                quantity, unit, dimension
-         FROM recipe_component WHERE recipe_version_id=$1`,
-        [src.recipe_version_id],
-      );
-      for (const c of comps.rows) {
+      const comps = await this.listRecipeComponentsTx(client, src.recipe_version_id);
+      for (const c of comps) {
         await client.query(
           `INSERT INTO recipe_component (
              recipe_component_id, recipe_version_id, line_number, component_kind,
@@ -348,29 +380,44 @@ export class RecipesService {
   async createPreparationDraft(raw: unknown) {
     const input = createPreparationDraftSchema.parse(raw);
     await this.assertTenant(input.tenantId);
-    let yieldRatio: string | null = null;
-    try {
-      yieldRatio = computeNormativeYieldRatio({
-        inputQuantity: input.normativeInputQuantity,
-        inputUnit: input.normativeInputUnit,
-        inputDimension: input.normativeInputDimension,
-        outputQuantity: input.normativeOutputQuantity,
-        outputUnit: input.normativeOutputUnit,
-        outputDimension: input.normativeOutputDimension,
-      });
-    } catch (err) {
-      mapDomainQtyError(err);
-    }
-    await this.validateComponents(input.tenantId, input.components);
-    if (input.outputCatalogItemId) {
-      await this.assertCatalogItem(input.tenantId, input.outputCatalogItemId);
-    }
+    positiveQty(
+      input.normativeInputQuantity,
+      input.normativeInputDimension,
+      input.normativeInputUnit,
+      'normative input',
+    );
+    positiveQty(
+      input.normativeOutputQuantity,
+      input.normativeOutputDimension,
+      input.normativeOutputUnit,
+      'normative output',
+    );
+    const yieldRatio = yieldRatioOrThrow({
+      inputQuantity: input.normativeInputQuantity,
+      inputUnit: input.normativeInputUnit,
+      inputDimension: input.normativeInputDimension,
+      outputQuantity: input.normativeOutputQuantity,
+      outputUnit: input.normativeOutputUnit,
+      outputDimension: input.normativeOutputDimension,
+    });
 
     const preparationSpecificationId = randomUUID();
     const preparationVersionId = randomUUID();
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
+      await lockTenantRecipeGraph(client, input.tenantId);
+      await this.validateComponents(input.tenantId, input.components, client);
+      if (input.materializationMode === 'STOCK_TRACKED') {
+        await this.assertStockTrackedOutputCompatible(
+          input.tenantId,
+          input.outputCatalogItemId!,
+          input.normativeOutputQuantity,
+          input.normativeOutputUnit,
+          input.normativeOutputDimension,
+          client,
+        );
+      }
       await client.query(
         `INSERT INTO preparation_specification (preparation_specification_id, tenant_id, name)
          VALUES ($1,$2,$3)`,
@@ -400,7 +447,7 @@ export class RecipesService {
       );
       await this.insertPreparationComponents(client, preparationVersionId, input.components);
       await this.assertNoSelfNest(client, preparationVersionId);
-      await this.assertPreparationGraphAcyclic(client);
+      await this.assertPreparationGraphAcyclic(client, input.tenantId);
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK');
@@ -413,40 +460,45 @@ export class RecipesService {
 
   async updatePreparationDraft(raw: unknown) {
     const input = updatePreparationDraftSchema.parse(raw);
-    const existing = await this.requirePreparationVersion(input.preparationVersionId);
-    if (existing.status !== 'DRAFT') {
-      throw new PublishedImmutableError(
-        'Cannot silently overwrite a PUBLISHED preparation version; create a new version instead',
-      );
-    }
-
-    const mode = input.materializationMode ?? existing.materialization_mode;
-    const outputCatalogItemId =
-      input.outputCatalogItemId === undefined
-        ? existing.output_catalog_item_id
-        : input.outputCatalogItemId;
-    if (mode === 'STOCK_TRACKED' && !outputCatalogItemId) {
-      throw new DomainValidationError(
-        'STOCK_TRACKED_OUTPUT_REQUIRED',
-        'STOCK_TRACKED preparation requires outputCatalogItemId',
-      );
-    }
-    if (mode === 'VIRTUAL' && outputCatalogItemId) {
-      throw new DomainValidationError(
-        'VIRTUAL_OUTPUT_FORBIDDEN',
-        'VIRTUAL preparation must not bind outputCatalogItemId',
-      );
-    }
-
-    const inQty = input.normativeInputQuantity ?? existing.normative_input_quantity;
-    const inUnit = input.normativeInputUnit ?? existing.normative_input_unit;
-    const inDim = input.normativeInputDimension ?? existing.normative_input_dimension;
-    const outQty = input.normativeOutputQuantity ?? existing.normative_output_quantity;
-    const outUnit = input.normativeOutputUnit ?? existing.normative_output_unit;
-    const outDim = input.normativeOutputDimension ?? existing.normative_output_dimension;
-    let yieldRatio: string | null = null;
+    const client = await this.pool.connect();
     try {
-      yieldRatio = computeNormativeYieldRatio({
+      await client.query('BEGIN');
+      const locked = await this.lockPreparationVersion(client, input.preparationVersionId);
+      if (locked.status !== 'DRAFT') {
+        throw new PublishedImmutableError(
+          'Cannot silently overwrite a PUBLISHED preparation version; create a new version instead',
+        );
+      }
+      const tenantId = await this.tenantForPrepSpec(client, locked.preparation_specification_id);
+      await lockTenantRecipeGraph(client, tenantId);
+
+      const mode = input.materializationMode ?? locked.materialization_mode;
+      const outputCatalogItemId =
+        input.outputCatalogItemId === undefined
+          ? locked.output_catalog_item_id
+          : input.outputCatalogItemId;
+      if (mode === 'STOCK_TRACKED' && !outputCatalogItemId) {
+        throw new DomainValidationError(
+          'STOCK_TRACKED_OUTPUT_REQUIRED',
+          'STOCK_TRACKED preparation requires outputCatalogItemId',
+        );
+      }
+      if (mode === 'VIRTUAL' && outputCatalogItemId) {
+        throw new DomainValidationError(
+          'VIRTUAL_OUTPUT_FORBIDDEN',
+          'VIRTUAL preparation must not bind outputCatalogItemId',
+        );
+      }
+
+      const inQty = input.normativeInputQuantity ?? locked.normative_input_quantity;
+      const inUnit = input.normativeInputUnit ?? locked.normative_input_unit;
+      const inDim = input.normativeInputDimension ?? locked.normative_input_dimension;
+      const outQty = input.normativeOutputQuantity ?? locked.normative_output_quantity;
+      const outUnit = input.normativeOutputUnit ?? locked.normative_output_unit;
+      const outDim = input.normativeOutputDimension ?? locked.normative_output_dimension;
+      positiveQty(inQty, inDim, inUnit, 'normative input');
+      positiveQty(outQty, outDim, outUnit, 'normative output');
+      const yieldRatio = yieldRatioOrThrow({
         inputQuantity: inQty,
         inputUnit: inUnit,
         inputDimension: inDim,
@@ -454,24 +506,18 @@ export class RecipesService {
         outputUnit: outUnit,
         outputDimension: outDim,
       });
-    } catch (err) {
-      mapDomainQtyError(err);
-    }
 
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
-      const locked = await this.lockPreparationVersion(client, input.preparationVersionId);
-      if (locked.status !== 'DRAFT') throw new PublishedImmutableError();
-      const spec = await client.query<{ tenant_id: string }>(
-        `SELECT tenant_id FROM preparation_specification WHERE preparation_specification_id=$1`,
-        [locked.preparation_specification_id],
-      );
-      const tenantId = spec.rows[0]?.tenant_id;
-      if (!tenantId) throw new NotFoundError('Preparation specification not found');
-      if (outputCatalogItemId) {
-        await this.assertCatalogItem(tenantId, outputCatalogItemId, client);
+      if (mode === 'STOCK_TRACKED') {
+        await this.assertStockTrackedOutputCompatible(
+          tenantId,
+          outputCatalogItemId!,
+          outQty,
+          outUnit,
+          outDim,
+          client,
+        );
       }
+
       await client.query(
         `UPDATE preparation_version SET
            materialization_mode=$2,
@@ -505,7 +551,7 @@ export class RecipesService {
         await this.insertPreparationComponents(client, input.preparationVersionId, input.components);
       }
       await this.assertNoSelfNest(client, input.preparationVersionId);
-      await this.assertPreparationGraphAcyclic(client);
+      await this.assertPreparationGraphAcyclic(client, tenantId);
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK');
@@ -524,15 +570,20 @@ export class RecipesService {
       if (locked.status === 'PUBLISHED') {
         throw new PublishedImmutableError('Preparation version already PUBLISHED');
       }
-      const comps = await client.query(
-        `SELECT 1 FROM preparation_component WHERE preparation_version_id=$1 LIMIT 1`,
-        [preparationVersionId],
-      );
-      if (comps.rowCount === 0) {
+      const tenantId = await this.tenantForPrepSpec(client, locked.preparation_specification_id);
+      await lockTenantRecipeGraph(client, tenantId);
+      const comps = await this.listPreparationComponentsTx(client, preparationVersionId);
+      if (comps.length === 0) {
         throw new DomainValidationError('EMPTY_PREPARATION', 'Cannot publish preparation without components');
       }
+      await this.assertReachablePreparationsPublished(
+        client,
+        comps
+          .filter((c) => c.component_kind === 'PREPARATION_VERSION' && c.nested_preparation_version_id)
+          .map((c) => c.nested_preparation_version_id!),
+      );
       await this.assertNoSelfNest(client, preparationVersionId);
-      await this.assertPreparationGraphAcyclic(client);
+      await this.assertPreparationGraphAcyclic(client, tenantId);
       await client.query(
         `UPDATE preparation_version SET status='PUBLISHED', published_at=NOW()
          WHERE preparation_version_id=$1 AND status='DRAFT'`,
@@ -567,6 +618,8 @@ export class RecipesService {
           'Create next version only from PUBLISHED (resolve/publish current DRAFT first)',
         );
       }
+      const tenantId = await this.tenantForPrepSpec(client, preparationSpecificationId);
+      await lockTenantRecipeGraph(client, tenantId);
       const newId = randomUUID();
       await client.query(
         `INSERT INTO preparation_version (
@@ -591,21 +644,8 @@ export class RecipesService {
           src.normative_yield_ratio,
         ],
       );
-      const comps = await client.query<{
-        line_number: number;
-        component_kind: string;
-        catalog_item_id: string | null;
-        nested_preparation_version_id: string | null;
-        quantity: string;
-        unit: string;
-        dimension: string;
-      }>(
-        `SELECT line_number, component_kind, catalog_item_id, nested_preparation_version_id,
-                quantity, unit, dimension
-         FROM preparation_component WHERE preparation_version_id=$1`,
-        [src.preparation_version_id],
-      );
-      for (const c of comps.rows) {
+      const comps = await this.listPreparationComponentsTx(client, src.preparation_version_id);
+      for (const c of comps) {
         await client.query(
           `INSERT INTO preparation_component (
              preparation_component_id, preparation_version_id, line_number, component_kind,
@@ -649,7 +689,6 @@ export class RecipesService {
     };
   }
 
-  /** Schema-level confirmation: no mutable cost SoT columns on recipe/prep tables. */
   async assertNoCostTruthColumns(): Promise<boolean> {
     const res = await this.pool.query<{ column_name: string }>(
       `SELECT column_name
@@ -720,6 +759,26 @@ export class RecipesService {
     if (res.rowCount === 0) throw new NotFoundError(`Tenant not found: ${tenantId}`);
   }
 
+  private async tenantForRecipeSpec(client: Client, recipeSpecificationId: string): Promise<string> {
+    const res = await client.query<{ tenant_id: string }>(
+      `SELECT tenant_id FROM recipe_specification WHERE recipe_specification_id=$1`,
+      [recipeSpecificationId],
+    );
+    const tenantId = res.rows[0]?.tenant_id;
+    if (!tenantId) throw new NotFoundError('Recipe specification not found');
+    return tenantId;
+  }
+
+  private async tenantForPrepSpec(client: Client, preparationSpecificationId: string): Promise<string> {
+    const res = await client.query<{ tenant_id: string }>(
+      `SELECT tenant_id FROM preparation_specification WHERE preparation_specification_id=$1`,
+      [preparationSpecificationId],
+    );
+    const tenantId = res.rows[0]?.tenant_id;
+    if (!tenantId) throw new NotFoundError('Preparation specification not found');
+    return tenantId;
+  }
+
   private async assertCatalogItem(tenantId: string, catalogItemId: string, client?: Client) {
     const q = client ?? this.pool;
     const res = await q.query<CatalogRow>(
@@ -734,6 +793,38 @@ export class RecipesService {
     return row;
   }
 
+  private async assertStockTrackedOutputCompatible(
+    tenantId: string,
+    outputCatalogItemId: string,
+    normativeOutputQuantity: string,
+    normativeOutputUnit: string,
+    normativeOutputDimension: UnitDimension,
+    client: Client,
+  ) {
+    const item = await this.assertCatalogItem(tenantId, outputCatalogItemId, client);
+    if (item.dimension !== normativeOutputDimension) {
+      throw new DomainValidationError(
+        'INCOMPATIBLE_UNIT',
+        `STOCK_TRACKED normative output dimension ${normativeOutputDimension} must match CatalogItem ${item.dimension}`,
+      );
+    }
+    try {
+      const normalized = normalizeToBaseUnit(
+        normativeOutputQuantity,
+        normativeOutputUnit,
+        normativeOutputDimension,
+      );
+      const catalogBase = normalizeToBaseUnit('1', item.base_unit, item.dimension);
+      if (normalized.unit !== catalogBase.unit) {
+        throw new IncompatibleUnitError(
+          `STOCK_TRACKED normative output unit ${normativeOutputUnit} is not compatible with CatalogItem base unit ${item.base_unit}`,
+        );
+      }
+    } catch (err) {
+      mapDomainQtyError(err);
+    }
+  }
+
   private async validateComponents(tenantId: string, components: ComponentInput[], client?: Client) {
     const lineNumbers = new Set<number>();
     for (const c of components) {
@@ -741,7 +832,7 @@ export class RecipesService {
         throw new DomainValidationError('DUPLICATE_LINE', `Duplicate lineNumber ${c.lineNumber}`);
       }
       lineNumbers.add(c.lineNumber);
-      assertQuantity(c.quantity, c.dimension, c.unit);
+      positiveQty(c.quantity, c.dimension, c.unit, 'component quantity');
       if (c.componentKind === 'CATALOG_ITEM') {
         const item = await this.assertCatalogItem(tenantId, c.catalogItemId, client);
         if (item.dimension !== c.dimension) {
@@ -770,6 +861,36 @@ export class RecipesService {
             'INCOMPATIBLE_UNIT',
             `Nested preparation quantity must use preparation output unit/dimension (${nested.normative_output_unit}/${nested.normative_output_dimension})`,
           );
+        }
+      }
+    }
+  }
+
+  /**
+   * Walk nested preparation references; every reachable version must be PUBLISHED
+   * before a parent may publish (immutable composition).
+   */
+  private async assertReachablePreparationsPublished(
+    client: Client,
+    rootNestedVersionIds: string[],
+  ): Promise<void> {
+    const queue = [...rootNestedVersionIds];
+    const seen = new Set<string>();
+    while (queue.length > 0) {
+      const id = queue.shift()!;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      const row = await this.requirePreparationVersion(id, client);
+      if (row.status !== 'PUBLISHED') {
+        throw new DomainValidationError(
+          'DRAFT_DEPENDENCY',
+          `Cannot publish while nested preparation version ${id} is still DRAFT`,
+        );
+      }
+      const nested = await this.listPreparationComponentsTx(client, id);
+      for (const c of nested) {
+        if (c.component_kind === 'PREPARATION_VERSION' && c.nested_preparation_version_id) {
+          queue.push(c.nested_preparation_version_id);
         }
       }
     }
@@ -834,18 +955,19 @@ export class RecipesService {
     }
   }
 
-  private async assertPreparationGraphAcyclic(client: Client) {
-    // Use latest version per preparation specification so a new draft supersedes older edges
-    // for cycle analysis without requiring historical versions to participate.
+  private async assertPreparationGraphAcyclic(client: Client, tenantId: string) {
     const edges = await client.query<{
       from_spec_id: string;
       to_spec_id: string;
     }>(
       `WITH latest AS (
-         SELECT DISTINCT ON (preparation_specification_id)
-           preparation_version_id, preparation_specification_id
-         FROM preparation_version
-         ORDER BY preparation_specification_id, version_number DESC
+         SELECT DISTINCT ON (pv.preparation_specification_id)
+           pv.preparation_version_id, pv.preparation_specification_id
+         FROM preparation_version pv
+         JOIN preparation_specification ps
+           ON ps.preparation_specification_id = pv.preparation_specification_id
+         WHERE ps.tenant_id = $1
+         ORDER BY pv.preparation_specification_id, pv.version_number DESC
        )
        SELECT latest.preparation_specification_id AS from_spec_id,
               nested.preparation_specification_id AS to_spec_id
@@ -854,10 +976,12 @@ export class RecipesService {
        JOIN preparation_version nested ON nested.preparation_version_id = pc.nested_preparation_version_id
        WHERE pc.component_kind = 'PREPARATION_VERSION'
          AND pc.nested_preparation_version_id IS NOT NULL`,
+      [tenantId],
     );
     const adjacency = new Map<string, string[]>();
     const allSpecs = await client.query<{ preparation_specification_id: string }>(
-      `SELECT preparation_specification_id FROM preparation_specification`,
+      `SELECT preparation_specification_id FROM preparation_specification WHERE tenant_id=$1`,
+      [tenantId],
     );
     for (const row of allSpecs.rows) {
       adjacency.set(row.preparation_specification_id, []);
@@ -940,8 +1064,48 @@ export class RecipesService {
     return res.rows;
   }
 
+  private async listRecipeComponentsTx(client: Client, recipeVersionId: string) {
+    const res = await client.query<{
+      line_number: number;
+      component_kind: string;
+      catalog_item_id: string | null;
+      nested_preparation_version_id: string | null;
+      quantity: string;
+      unit: string;
+      dimension: UnitDimension;
+    }>(
+      `SELECT line_number, component_kind, catalog_item_id, nested_preparation_version_id,
+              quantity, unit, dimension::text AS dimension
+       FROM recipe_component
+       WHERE recipe_version_id=$1
+       ORDER BY line_number`,
+      [recipeVersionId],
+    );
+    return res.rows;
+  }
+
   private async listPreparationComponents(preparationVersionId: string) {
     const res = await this.pool.query<{
+      line_number: number;
+      component_kind: string;
+      catalog_item_id: string | null;
+      nested_preparation_version_id: string | null;
+      quantity: string;
+      unit: string;
+      dimension: UnitDimension;
+    }>(
+      `SELECT line_number, component_kind, catalog_item_id, nested_preparation_version_id,
+              quantity, unit, dimension::text AS dimension
+       FROM preparation_component
+       WHERE preparation_version_id=$1
+       ORDER BY line_number`,
+      [preparationVersionId],
+    );
+    return res.rows;
+  }
+
+  private async listPreparationComponentsTx(client: Client, preparationVersionId: string) {
+    const res = await client.query<{
       line_number: number;
       component_kind: string;
       catalog_item_id: string | null;

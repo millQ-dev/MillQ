@@ -61,6 +61,10 @@ export {
   computeNormativeYieldRatio,
   scaleComponentsForBatch,
   batchScalePreservesUnitRatios,
+  normalizeToBaseUnit,
+  factorToBaseUnit,
+  assertSameDimensionCompatibleUnits,
+  assertPositiveQuantity,
   type NormativeYieldInput,
   type ScalableComponent,
 } from './recipe-graph.js';

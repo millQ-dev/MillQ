@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
   assertAcyclicComposition,
+  assertPositiveQuantity,
   batchScalePreservesUnitRatios,
   computeNormativeYieldRatio,
   findCompositionCycle,
+  normalizeToBaseUnit,
   scaleComponentsForBatch,
 } from './recipe-graph.js';
 import { createQuantity } from './quantity.js';
-import { DomainError, InvalidDecimalError } from './errors.js';
+import { DomainError, IncompatibleUnitError, InvalidDecimalError } from './errors.js';
 
 describe('recipe composition graph', () => {
   it('rejects direct self-cycle A → A', () => {
@@ -46,7 +48,7 @@ describe('recipe composition graph', () => {
 });
 
 describe('normative yield', () => {
-  it('computes output/input when units match', () => {
+  it('1000 g -> 800 g = 0.8', () => {
     expect(
       computeNormativeYieldRatio({
         inputQuantity: '1000',
@@ -59,7 +61,33 @@ describe('normative yield', () => {
     ).toBe('0.8');
   });
 
-  it('rejects incompatible yield basis', () => {
+  it('1 kg -> 800 g = 0.8', () => {
+    expect(
+      computeNormativeYieldRatio({
+        inputQuantity: '1',
+        inputUnit: 'kg',
+        inputDimension: 'MASS',
+        outputQuantity: '800',
+        outputUnit: 'g',
+        outputDimension: 'MASS',
+      }),
+    ).toBe('0.8');
+  });
+
+  it('800 g -> 1 kg input reverse-compatible units = 0.8', () => {
+    expect(
+      computeNormativeYieldRatio({
+        inputQuantity: '1',
+        inputUnit: 'kg',
+        inputDimension: 'MASS',
+        outputQuantity: '0.8',
+        outputUnit: 'kg',
+        outputDimension: 'MASS',
+      }),
+    ).toBe('0.8');
+  });
+
+  it('rejects MASS -> VOLUME', () => {
     expect(() =>
       computeNormativeYieldRatio({
         inputQuantity: '1',
@@ -69,7 +97,13 @@ describe('normative yield', () => {
         outputUnit: 'L',
         outputDimension: 'VOLUME',
       }),
-    ).toThrow(InvalidDecimalError);
+    ).toThrow(IncompatibleUnitError);
+  });
+
+  it('normalizes kg to g base', () => {
+    const q = normalizeToBaseUnit('1', 'kg', 'MASS');
+    expect(q.value).toBe('1000');
+    expect(q.unit).toBe('g');
   });
 });
 
@@ -84,5 +118,12 @@ describe('batch size scale invariant', () => {
     const scaled = scaleComponentsForBatch(components, '2');
     expect(scaled[0]!.quantity).toBe('4');
     expect(scaled[1]!.quantity).toBe('1000');
+  });
+});
+
+describe('positive quantity', () => {
+  it('rejects zero and negative', () => {
+    expect(() => assertPositiveQuantity('0', 'MASS', 'g', 'batch size')).toThrow(InvalidDecimalError);
+    expect(() => assertPositiveQuantity('-1', 'MASS', 'g', 'batch size')).toThrow(InvalidDecimalError);
   });
 });

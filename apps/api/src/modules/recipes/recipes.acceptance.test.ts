@@ -212,8 +212,8 @@ describe('Block D1.1 Recipes & Preparations foundation (PostgreSQL)', () => {
       tenantId: fx.tenantId,
       name: 'Trimmed meat',
       materializationMode: 'VIRTUAL',
-      normativeInputQuantity: '1000',
-      normativeInputUnit: 'g',
+      normativeInputQuantity: '1',
+      normativeInputUnit: 'kg',
       normativeInputDimension: 'MASS',
       normativeOutputQuantity: '800',
       normativeOutputUnit: 'g',
@@ -253,7 +253,7 @@ describe('Block D1.1 Recipes & Preparations foundation (PostgreSQL)', () => {
           },
         ],
       }),
-    ).rejects.toMatchObject({ code: 'INVALID_DECIMAL' });
+    ).rejects.toMatchObject({ code: 'INCOMPATIBLE_UNIT' });
   });
 
   it('6 — direct cycle rejected (A → A)', async () => {
@@ -628,5 +628,401 @@ describe('Block D1.1 Recipes & Preparations foundation (PostgreSQL)', () => {
         ],
       }),
     ).rejects.toBeInstanceOf(ZodError);
+  });
+
+  it('13 — cannot publish recipe referencing DRAFT preparation', async () => {
+    const draftPrep = await service.createPreparationDraft({
+      tenantId: fx.tenantId,
+      name: 'Draft sauce',
+      materializationMode: 'VIRTUAL',
+      normativeInputQuantity: '1',
+      normativeInputUnit: 'L',
+      normativeInputDimension: 'VOLUME',
+      normativeOutputQuantity: '1',
+      normativeOutputUnit: 'L',
+      normativeOutputDimension: 'VOLUME',
+      components: [
+        {
+          lineNumber: 1,
+          componentKind: 'CATALOG_ITEM',
+          catalogItemId: fx.oilItemId,
+          quantity: '1',
+          unit: 'L',
+          dimension: 'VOLUME',
+        },
+      ],
+    });
+    const recipe = await service.createRecipeDraft({
+      tenantId: fx.tenantId,
+      name: 'Depends on draft',
+      batchSizeQuantity: '1',
+      batchSizeUnit: 'ea',
+      batchSizeDimension: 'COUNT',
+      components: [
+        {
+          lineNumber: 1,
+          componentKind: 'PREPARATION_VERSION',
+          nestedPreparationVersionId: draftPrep.preparationVersionId,
+          quantity: '0.1',
+          unit: 'L',
+          dimension: 'VOLUME',
+        },
+      ],
+    });
+    await expect(service.publishRecipeVersion(recipe.recipeVersionId)).rejects.toMatchObject({
+      code: 'DRAFT_DEPENDENCY',
+    });
+  });
+
+  it('14 — cannot publish preparation referencing DRAFT preparation', async () => {
+    const draftChild = await service.createPreparationDraft({
+      tenantId: fx.tenantId,
+      name: 'Child draft',
+      materializationMode: 'VIRTUAL',
+      normativeInputQuantity: '1',
+      normativeInputUnit: 'L',
+      normativeInputDimension: 'VOLUME',
+      normativeOutputQuantity: '1',
+      normativeOutputUnit: 'L',
+      normativeOutputDimension: 'VOLUME',
+      components: [
+        {
+          lineNumber: 1,
+          componentKind: 'CATALOG_ITEM',
+          catalogItemId: fx.oilItemId,
+          quantity: '1',
+          unit: 'L',
+          dimension: 'VOLUME',
+        },
+      ],
+    });
+    const parent = await service.createPreparationDraft({
+      tenantId: fx.tenantId,
+      name: 'Parent',
+      materializationMode: 'VIRTUAL',
+      normativeInputQuantity: '1',
+      normativeInputUnit: 'L',
+      normativeInputDimension: 'VOLUME',
+      normativeOutputQuantity: '1',
+      normativeOutputUnit: 'L',
+      normativeOutputDimension: 'VOLUME',
+      components: [
+        {
+          lineNumber: 1,
+          componentKind: 'PREPARATION_VERSION',
+          nestedPreparationVersionId: draftChild.preparationVersionId,
+          quantity: '1',
+          unit: 'L',
+          dimension: 'VOLUME',
+        },
+      ],
+    });
+    await expect(service.publishPreparationVersion(parent.preparationVersionId)).rejects.toMatchObject({
+      code: 'DRAFT_DEPENDENCY',
+    });
+  });
+
+  it('15 — publish succeeds when dependencies are PUBLISHED; later prep edit does not change published parent', async () => {
+    const child = await service.createPreparationDraft({
+      tenantId: fx.tenantId,
+      name: 'Published child',
+      materializationMode: 'VIRTUAL',
+      normativeInputQuantity: '1',
+      normativeInputUnit: 'L',
+      normativeInputDimension: 'VOLUME',
+      normativeOutputQuantity: '1',
+      normativeOutputUnit: 'L',
+      normativeOutputDimension: 'VOLUME',
+      components: [
+        {
+          lineNumber: 1,
+          componentKind: 'CATALOG_ITEM',
+          catalogItemId: fx.oilItemId,
+          quantity: '1',
+          unit: 'L',
+          dimension: 'VOLUME',
+        },
+      ],
+    });
+    await service.publishPreparationVersion(child.preparationVersionId);
+
+    const recipe = await service.createRecipeDraft({
+      tenantId: fx.tenantId,
+      name: 'Pinned dish',
+      batchSizeQuantity: '1',
+      batchSizeUnit: 'ea',
+      batchSizeDimension: 'COUNT',
+      components: [
+        {
+          lineNumber: 1,
+          componentKind: 'PREPARATION_VERSION',
+          nestedPreparationVersionId: child.preparationVersionId,
+          quantity: '0.2',
+          unit: 'L',
+          dimension: 'VOLUME',
+        },
+      ],
+    });
+    const published = await service.publishRecipeVersion(recipe.recipeVersionId);
+    expect(published.status).toBe('PUBLISHED');
+    expect(published.components[0]!.nestedPreparationVersionId).toBe(child.preparationVersionId);
+
+    const nextChild = await service.createNextPreparationVersion(child.preparationSpecificationId);
+    await service.updatePreparationDraft({
+      preparationVersionId: nextChild.preparationVersionId,
+      components: [
+        {
+          lineNumber: 1,
+          componentKind: 'CATALOG_ITEM',
+          catalogItemId: fx.milkItemId,
+          quantity: '1',
+          unit: 'L',
+          dimension: 'VOLUME',
+        },
+      ],
+    });
+    const still = await service.getRecipeVersion(published.recipeVersionId);
+    expect(still.components[0]!.nestedPreparationVersionId).toBe(child.preparationVersionId);
+    expect(still.components[0]!.nestedPreparationVersionId).not.toBe(nextChild.preparationVersionId);
+  });
+
+  it('16 — STOCK_TRACKED output must match CatalogItem measurement', async () => {
+    const doughItemId = randomUUID();
+    await pool.query(
+      `INSERT INTO catalog_item (catalog_item_id, tenant_id, name, base_unit, dimension)
+       VALUES ($1,$2,'Dough kg','kg','MASS')`,
+      [doughItemId, fx.tenantId],
+    );
+
+    const ok = await service.createPreparationDraft({
+      tenantId: fx.tenantId,
+      name: 'Dough ok',
+      materializationMode: 'STOCK_TRACKED',
+      outputCatalogItemId: doughItemId,
+      normativeInputQuantity: '1',
+      normativeInputUnit: 'kg',
+      normativeInputDimension: 'MASS',
+      normativeOutputQuantity: '1000',
+      normativeOutputUnit: 'g',
+      normativeOutputDimension: 'MASS',
+      components: [
+        {
+          lineNumber: 1,
+          componentKind: 'CATALOG_ITEM',
+          catalogItemId: fx.meatItemId,
+          quantity: '1',
+          unit: 'kg',
+          dimension: 'MASS',
+        },
+      ],
+    });
+    expect(ok.outputCatalogItemId).toBe(doughItemId);
+    expect(ok.normativeYieldRatio).toBe('1');
+
+    await expect(
+      service.createPreparationDraft({
+        tenantId: fx.tenantId,
+        name: 'Dough bad dim',
+        materializationMode: 'STOCK_TRACKED',
+        outputCatalogItemId: doughItemId,
+        normativeInputQuantity: '1',
+        normativeInputUnit: 'L',
+        normativeInputDimension: 'VOLUME',
+        normativeOutputQuantity: '1',
+        normativeOutputUnit: 'L',
+        normativeOutputDimension: 'VOLUME',
+        components: [
+          {
+            lineNumber: 1,
+            componentKind: 'CATALOG_ITEM',
+            catalogItemId: fx.oilItemId,
+            quantity: '1',
+            unit: 'L',
+            dimension: 'VOLUME',
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: 'INCOMPATIBLE_UNIT' });
+  });
+
+  it('17 — concurrent opposing graph updates cannot both commit a cycle', async () => {
+    const mkPublishedLeaf = async (name: string) => {
+      const p = await service.createPreparationDraft({
+        tenantId: fx.tenantId,
+        name,
+        materializationMode: 'VIRTUAL',
+        normativeInputQuantity: '1',
+        normativeInputUnit: 'L',
+        normativeInputDimension: 'VOLUME',
+        normativeOutputQuantity: '1',
+        normativeOutputUnit: 'L',
+        normativeOutputDimension: 'VOLUME',
+        components: [
+          {
+            lineNumber: 1,
+            componentKind: 'CATALOG_ITEM',
+            catalogItemId: fx.oilItemId,
+            quantity: '1',
+            unit: 'L',
+            dimension: 'VOLUME',
+          },
+        ],
+      });
+      await service.publishPreparationVersion(p.preparationVersionId);
+      return p;
+    };
+    const aPub = await mkPublishedLeaf('ConcA');
+    const bPub = await mkPublishedLeaf('ConcB');
+    const aDraft = await service.createNextPreparationVersion(aPub.preparationSpecificationId);
+    const bDraft = await service.createNextPreparationVersion(bPub.preparationSpecificationId);
+
+    const results = await Promise.allSettled([
+      service.updatePreparationDraft({
+        preparationVersionId: aDraft.preparationVersionId,
+        components: [
+          {
+            lineNumber: 1,
+            componentKind: 'PREPARATION_VERSION',
+            nestedPreparationVersionId: bPub.preparationVersionId,
+            quantity: '1',
+            unit: 'L',
+            dimension: 'VOLUME',
+          },
+        ],
+      }),
+      service.updatePreparationDraft({
+        preparationVersionId: bDraft.preparationVersionId,
+        components: [
+          {
+            lineNumber: 1,
+            componentKind: 'PREPARATION_VERSION',
+            nestedPreparationVersionId: aPub.preparationVersionId,
+            quantity: '1',
+            unit: 'L',
+            dimension: 'VOLUME',
+          },
+        ],
+      }),
+    ]);
+
+    const fulfilled = results.filter((r) => r.status === 'fulfilled').length;
+    const rejected = results.filter((r) => r.status === 'rejected');
+    // With tenant graph lock + cycle check, at most one opposing edge may land without forming a cycle
+    // among *latest* versions. If both nest the other's PUBLISHED v1, latest A→B and B→A is a cycle —
+    // so at least one must fail.
+    expect(rejected.length).toBeGreaterThanOrEqual(1);
+    expect(fulfilled + rejected.length).toBe(2);
+    if (rejected.length === 1) {
+      expect((rejected[0] as PromiseRejectedResult).reason).toMatchObject({ code: 'COMPOSITION_CYCLE' });
+    }
+  });
+
+  it('18 — partial concurrent update cannot revert previously committed field', async () => {
+    const recipe = await service.createRecipeDraft({
+      tenantId: fx.tenantId,
+      name: 'Race dish',
+      batchSizeQuantity: '10',
+      batchSizeUnit: 'ea',
+      batchSizeDimension: 'COUNT',
+      components: [
+        {
+          lineNumber: 1,
+          componentKind: 'CATALOG_ITEM',
+          catalogItemId: fx.milkItemId,
+          quantity: '2',
+          unit: 'L',
+          dimension: 'VOLUME',
+        },
+      ],
+    });
+
+    await Promise.all([
+      service.updateRecipeDraft({
+        recipeVersionId: recipe.recipeVersionId,
+        batchSizeQuantity: '99',
+      }),
+      service.updateRecipeDraft({
+        recipeVersionId: recipe.recipeVersionId,
+        components: [
+          {
+            lineNumber: 1,
+            componentKind: 'CATALOG_ITEM',
+            catalogItemId: fx.milkItemId,
+            quantity: '5',
+            unit: 'L',
+            dimension: 'VOLUME',
+          },
+        ],
+      }),
+    ]);
+    const final = await service.getRecipeVersion(recipe.recipeVersionId);
+    expect(final.batchSizeQuantity).toBe('99');
+    expect(final.components[0]!.quantity).toBe('5');
+  });
+
+  it('19 — positive quantity required for batch, component, normative I/O', async () => {
+    await expect(
+      service.createRecipeDraft({
+        tenantId: fx.tenantId,
+        name: 'Zero batch',
+        batchSizeQuantity: '0',
+        batchSizeUnit: 'ea',
+        batchSizeDimension: 'COUNT',
+        components: [
+          {
+            lineNumber: 1,
+            componentKind: 'CATALOG_ITEM',
+            catalogItemId: fx.milkItemId,
+            quantity: '1',
+            unit: 'L',
+            dimension: 'VOLUME',
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: 'INVALID_DECIMAL' });
+
+    await expect(
+      service.createRecipeDraft({
+        tenantId: fx.tenantId,
+        name: 'Zero component',
+        batchSizeQuantity: '1',
+        batchSizeUnit: 'ea',
+        batchSizeDimension: 'COUNT',
+        components: [
+          {
+            lineNumber: 1,
+            componentKind: 'CATALOG_ITEM',
+            catalogItemId: fx.milkItemId,
+            quantity: '0',
+            unit: 'L',
+            dimension: 'VOLUME',
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: 'INVALID_DECIMAL' });
+
+    await expect(
+      service.createPreparationDraft({
+        tenantId: fx.tenantId,
+        name: 'Zero normative',
+        materializationMode: 'VIRTUAL',
+        normativeInputQuantity: '0',
+        normativeInputUnit: 'L',
+        normativeInputDimension: 'VOLUME',
+        normativeOutputQuantity: '1',
+        normativeOutputUnit: 'L',
+        normativeOutputDimension: 'VOLUME',
+        components: [
+          {
+            lineNumber: 1,
+            componentKind: 'CATALOG_ITEM',
+            catalogItemId: fx.oilItemId,
+            quantity: '1',
+            unit: 'L',
+            dimension: 'VOLUME',
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: 'INVALID_DECIMAL' });
   });
 });

@@ -1,6 +1,6 @@
-import { DomainError, InvalidDecimalError } from './errors.js';
-import { parseCanonicalDecimal, toCanonicalDecimal } from './decimal.js';
-import { createQuantity, type Quantity, type UnitDimension } from './quantity.js';
+import { DomainError, IncompatibleUnitError, InvalidDecimalError } from './errors.js';
+import { assertPositive, parseCanonicalDecimal, toCanonicalDecimal } from './decimal.js';
+import { BASE_UNITS, createQuantity, type Quantity, type UnitDimension } from './quantity.js';
 
 /**
  * Detect directed cycles in a composition graph (preparation / recipe nesting).
@@ -45,6 +45,51 @@ export function assertAcyclicComposition(adjacency: ReadonlyMap<string, readonly
   }
 }
 
+/**
+ * Exact positive factors from common same-dimension units into ADR-0002 BASE_UNITS
+ * (MASS→g, VOLUME→ml, COUNT→ea). Not a general conversion registry — SI-compatible only.
+ */
+const TO_BASE_FACTOR: Record<UnitDimension, Readonly<Record<string, string>>> = {
+  MASS: { g: '1', kg: '1000' },
+  VOLUME: { ml: '1', L: '1000' },
+  COUNT: { ea: '1' },
+};
+
+export function factorToBaseUnit(unit: string, dimension: UnitDimension): string {
+  const factor = TO_BASE_FACTOR[dimension][unit];
+  if (!factor) {
+    throw new IncompatibleUnitError(
+      `No accepted conversion from unit '${unit}' to base ${BASE_UNITS[dimension]} for ${dimension}`,
+    );
+  }
+  return factor;
+}
+
+/** Normalize a quantity into the dimension's BASE_UNITS using accepted SI factors. */
+export function normalizeToBaseUnit(
+  value: string,
+  unit: string,
+  dimension: UnitDimension,
+): Quantity {
+  const q = createQuantity(value, dimension, unit);
+  const factor = factorToBaseUnit(q.unit, dimension);
+  const baseValue = parseCanonicalDecimal(q.value).mul(parseCanonicalDecimal(factor));
+  return createQuantity(toCanonicalDecimal(baseValue), dimension, BASE_UNITS[dimension]);
+}
+
+/**
+ * True when `fromUnit` can be expressed in `toUnit` within the same dimension
+ * via accepted SI factors (both convert to the same BASE_UNITS).
+ */
+export function assertSameDimensionCompatibleUnits(
+  fromUnit: string,
+  toUnit: string,
+  dimension: UnitDimension,
+): void {
+  factorToBaseUnit(fromUnit, dimension);
+  factorToBaseUnit(toUnit, dimension);
+}
+
 export type NormativeYieldInput = {
   readonly inputQuantity: string;
   readonly inputUnit: string;
@@ -55,22 +100,27 @@ export type NormativeYieldInput = {
 };
 
 /**
- * expectedYield = expectedOutput / expectedComparableInput when units+dimensions match (ADR-0003).
- * Does not invent a yield when dimensions/units are incompatible.
+ * expectedYield = expectedOutput / expectedComparableInput (ADR-0003).
+ * Same-dimension compatible units are normalized to BASE_UNITS before division.
+ * Cross-dimension remains rejected as IncompatibleUnitError.
  */
 export function computeNormativeYieldRatio(input: NormativeYieldInput): string {
-  const inQty = createQuantity(input.inputQuantity, input.inputDimension, input.inputUnit);
-  const outQty = createQuantity(input.outputQuantity, input.outputDimension, input.outputUnit);
-  if (inQty.dimension !== outQty.dimension || inQty.unit !== outQty.unit) {
-    throw new InvalidDecimalError(
-      `Normative yield requires matching unit/dimension (input ${inQty.unit}/${inQty.dimension} vs output ${outQty.unit}/${outQty.dimension})`,
+  if (input.inputDimension !== input.outputDimension) {
+    throw new IncompatibleUnitError(
+      `Normative yield requires same dimension (input ${input.inputDimension} vs output ${input.outputDimension})`,
     );
   }
-  const denom = parseCanonicalDecimal(inQty.value);
+  const inBase = normalizeToBaseUnit(input.inputQuantity, input.inputUnit, input.inputDimension);
+  const outBase = normalizeToBaseUnit(
+    input.outputQuantity,
+    input.outputUnit,
+    input.outputDimension,
+  );
+  const denom = parseCanonicalDecimal(inBase.value);
   if (denom.isZero()) {
     throw new InvalidDecimalError('Normative input quantity cannot be zero for yield');
   }
-  const numer = parseCanonicalDecimal(outQty.value);
+  const numer = parseCanonicalDecimal(outBase.value);
   return toCanonicalDecimal(numer.div(denom));
 }
 
@@ -90,11 +140,10 @@ export function scaleComponentsForBatch(
   scaleFactor: string,
 ): ScalableComponent[] {
   const s = parseCanonicalDecimal(scaleFactor);
-  if (!s.gt(0)) {
-    throw new InvalidDecimalError('Batch scale factor must be positive');
-  }
+  assertPositive(s, 'Batch scale factor');
   return components.map((c) => {
     const q = createQuantity(c.quantity, c.dimension, c.unit);
+    assertPositive(parseCanonicalDecimal(q.value), 'component quantity');
     const scaled = parseCanonicalDecimal(q.value).mul(s);
     return {
       ...c,
@@ -112,9 +161,8 @@ export function batchScalePreservesUnitRatios(
   scaleFactor: string,
 ): boolean {
   const s = parseCanonicalDecimal(scaleFactor);
-  if (!s.gt(0)) {
-    throw new InvalidDecimalError('Batch scale factor must be positive');
-  }
+  assertPositive(s, 'Batch scale factor');
+  assertPositive(parseCanonicalDecimal(baseBatch.value), 'batch size');
   const scaledBatchValue = parseCanonicalDecimal(baseBatch.value).mul(s);
   const scaledBatch = createQuantity(
     toCanonicalDecimal(scaledBatchValue),
@@ -124,9 +172,6 @@ export function batchScalePreservesUnitRatios(
   const scaledComponents = scaleComponentsForBatch(baseComponents, scaleFactor);
   const baseSize = parseCanonicalDecimal(baseBatch.value);
   const scaledSize = parseCanonicalDecimal(scaledBatch.value);
-  if (baseSize.isZero() || scaledSize.isZero()) {
-    throw new InvalidDecimalError('Batch size cannot be zero');
-  }
   for (let i = 0; i < baseComponents.length; i++) {
     const base = baseComponents[i]!;
     const scaled = scaledComponents[i]!;
@@ -135,4 +180,16 @@ export function batchScalePreservesUnitRatios(
     if (!baseRatio.eq(scaledRatio)) return false;
   }
   return true;
+}
+
+/** Positive quantity required for recipe/preparation magnitudes (batch, component, normative I/O). */
+export function assertPositiveQuantity(
+  value: string,
+  dimension: UnitDimension,
+  unit: string,
+  label: string,
+): Quantity {
+  const q = createQuantity(value, dimension, unit);
+  assertPositive(parseCanonicalDecimal(q.value), label);
+  return q;
 }
