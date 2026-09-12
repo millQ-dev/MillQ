@@ -3,7 +3,7 @@
 - **Status:** Proposed reference with Architecture v1.3
 - **Date:** 2026-09-04
 - **Supersedes:** Architecture v1.2 module map naming for extended modules
-- **Authority:** [`architecture-v1.3.md`](architecture-v1.3.md), ADR-0008 (Accepted), ADR-0012…0016, 0018, 0019, 0020, 0021 (Accepted), ADR-0011, 0017 (Proposed)
+- **Authority:** [`architecture-v1.3.md`](architecture-v1.3.md), ADR-0008 (Accepted), ADR-0012…0021 (Accepted), ADR-0011 (Proposed)
 - **Note:** Origin hosting ADR-0004 is unrelated.
 
 Each row is an internal module boundary inside the **modular monolith**.
@@ -204,8 +204,8 @@ Costing writes **only derived revisions**, never invents inventory movements (AD
 | --- | --- |
 | **Owns** | DiningArea, FloorPlanVersion, Table, TableLayoutObject, TableRuntimeState, TableCombination |
 | **Does not own** | Order content (Orders hold optional TableAssignment) |
-| **Key concepts** | Optional capability `tables.enabled` (ADR-0017) |
-| **Commands in** | PublishFloorPlan, UpdateTableRuntimeState, CombineTables |
+| **Key concepts** | Optional capability `tables.enabled` (Corner/Cafe/Restaurant); versioned FloorPlan; optional TableAssignment; multi-order/table; TableCombination; ADR-0017 **Accepted**; offline per ADR-0018 |
+| **Commands in** | PublishFloorPlan, UpdateTableRuntimeState, AssignOrderToTable, MoveOrderTable, CombineTables |
 | **Facts out** | FloorPlanPublished, TableStateChanged |
 | **Depends on** | Organization, PackageEntitlement / OutletCapabilityConfig |
 
