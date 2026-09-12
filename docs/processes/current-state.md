@@ -1,6 +1,6 @@
 # MillQ Current State
 
-**Checkpoint:** Architecture v1.3 alignment **pending strategic acceptance** (PR #9)  
+**Checkpoint:** Architecture v1.3 alignment **PR #9 — PO APPROVE WITH CHANGES applied; awaiting final PO approval**  
 **Canonical host:** Cursor Origin (`https://origin.cursor.com/millqdev/MillQ.git`)  
 **Backup host:** GitHub `https://github.com/millQ-dev/MillQ.git` (mirror only)  
 **Origin main:** `46f01ec`  
@@ -14,8 +14,8 @@
 | Foundation Operational Core | Merged |
 | Architecture v1.2 | **Accepted / Merged** |
 | Block C Goods Receipt vertical | **Merged** + v1.3-compatible |
-| Architecture v1.3 alignment | **PR #9 pending strategic acceptance** — ADR-0011…0021 Proposed |
-| New application verticals | **STOP** until architecture acceptance |
+| Architecture v1.3 alignment | **PR #9 open** — ADR-0020/0021 **Accepted** (PO deltas); ADR-0011…0019 still Proposed |
+| New application verticals | **STOP** until final architecture acceptance + PO launch |
 | Origin CI | **Attached** — Depot |
 | GitHub Actions | Dormant copies only |
 | GitHub backup | Verify lag independently |
@@ -33,6 +33,8 @@
 | ADR-0008 | Accepted | Domain Boundaries Architecture v1.2 |
 | ADR-0009 | Accepted | Catalog, Units, SupplierItem |
 | ADR-0010 | Accepted | Document posting & correction |
+| ADR-0020 | Accepted | Production Intelligence Execution & Model Gateway |
+| ADR-0021 | Accepted | Voice & Multilingual Interaction Boundary |
 
 ## Proposed (Architecture v1.3 — not yet Accepted)
 
@@ -47,13 +49,11 @@
 | ADR-0017 | Floor Plan & Table Engine |
 | ADR-0018 | Offline Multi-Platform Client Runtime |
 | ADR-0019 | Economic Facts & Contribution Margin |
-| ADR-0020 | Production Intelligence Execution & Model Gateway |
-| ADR-0021 | Voice & Multilingual Interaction Boundary |
 
 ## Architecture baseline
 
 - [`docs/architecture/architecture-v1.2.md`](../architecture/architecture-v1.2.md) (Accepted)
-- [`docs/architecture/architecture-v1.3.md`](../architecture/architecture-v1.3.md) (**Proposed**)
+- [`docs/architecture/architecture-v1.3.md`](../architecture/architecture-v1.3.md) (**Proposed** overall; §§15–16 backed by Accepted ADR-0020/0021)
 - [`docs/architecture/domain-module-map.md`](../architecture/domain-module-map.md)
 - [`docs/architecture/block-c-implementation.md`](../architecture/block-c-implementation.md)
 
@@ -74,6 +74,6 @@
 ## Next recommended sequence
 
 1. ~~Block C~~ done (merged, v1.3-compatible)  
-2. **Strategic acceptance of Architecture v1.3** (Proposed ADRs including 0020/0021) — PR #9 **DO NOT MERGE** until PO accepts  
+2. **Final PO approval of Architecture v1.3 / PR #9** — **DO NOT MERGE** until then; no new verticals  
 3. PO launches next application vertical (candidate: Recipes → Sale write-off → Food Cost)  
 4. Only then implement that vertical — **STOP** until then  

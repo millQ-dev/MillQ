@@ -26,7 +26,7 @@ Before POS implementation, the following are architectural requirements:
 
 `offline-foundation.md` remains the operational behavior reference; this ADR elevates multi-platform runtime to a decision gate for POS.
 
-Voice and Production Intelligence inference are **server-side MVP capabilities** (centralized MillQ-controlled infrastructure per ADR-0020/0021), not prerequisites for offline POS.
+Voice and Production Intelligence inference are **server-side MVP capabilities** (via ModelGateway / speech adapters per ADR-0020/0021; deployment provider-neutral), not prerequisites for offline POS.
 
 ## Consequences
 

@@ -4,9 +4,9 @@
 - **Date:** 2026-09-04
 - **Canonical host:** Cursor Origin
 - **Base:** Architecture [v1.2](architecture-v1.2.md) (Accepted) + Block C merged @ `a5e84b0` / main tip at alignment start `46f01ec`
-- **Related ADRs:** ADR-0001…0004, 0006…0010 (Accepted); ADR-0011…0021 (Proposed with this alignment)
+- **Related ADRs:** ADR-0001…0004, 0006…0010 (Accepted); ADR-0020, ADR-0021 (Accepted — PO deltas 2026-09-12); ADR-0011…0019 (Proposed with this alignment)
 - **Module map:** [`domain-module-map.md`](domain-module-map.md)
-- **Authority command:** KiU correcting command after gap-analysis (PO / strategic architecture); PO directions for Intelligence execution + Voice (2026-09-12)
+- **Authority command:** KiU correcting command after gap-analysis (PO / strategic architecture); PO Intelligence + Voice directions (2026-09-12); PO APPROVE WITH CHANGES hosting + voice intent classes (2026-09-12)
 
 ## 1. Purpose
 
@@ -15,7 +15,7 @@ Architecture v1.3 **extends** v1.2 with boundaries that must be frozen **before*
 ```text
 v1.2 domain boundaries (Accepted)
         +
-v1.3 deltas (this document + ADR-0011…0021)
+v1.3 deltas (this document + ADR-0011…0019 Proposed + ADR-0020/0021 Accepted)
         =
 Architecture v1.3 baseline for resumed implementation
 ```
@@ -30,7 +30,7 @@ Architecture v1.3 baseline for resumed implementation
 | --- | --- |
 | Origin main | `46f01ec` |
 | Block C | **Merged** (PR #7 → `a5e84b0`) and **v1.3-compatible** |
-| Architecture v1.3 alignment | **PR #9 pending strategic acceptance** |
+| Architecture v1.3 alignment | **PR #9 open** — ADR-0020/0021 Accepted (PO deltas); remaining Proposed ADRs await final acceptance |
 | New application verticals | **STOP** until architecture acceptance |
 
 **Do not** describe Block C as the next vertical. After acceptance, the current candidate is:
@@ -182,7 +182,7 @@ Beyond CostQuote: ContributionMargin (dish), ChannelProfit, and related certaint
 
 ## 15. Production Intelligence Execution / ModelGateway (supporting)
 
-ADR-0006 remains Accepted (Intelligence must not mutate Core). ADR-0020 adds execution contracts:
+ADR-0006 remains Accepted (Intelligence must not mutate Core). ADR-0020 (**Accepted**) adds execution contracts:
 
 ```text
 Operational Core
@@ -193,20 +193,25 @@ Operational Core
 ```
 
 - No arbitrary LLM SQL/DB access.
-- Primary inference: MillQ-controlled Vietnam infrastructure; no restaurant-local model weights in MVP.
-- POS does not depend on AI availability.
-- Specific models (e.g. Qwen*) are candidates, not permanent invariants.
-- External providers only via Egress Gate (ADR-0015).
+- Preferred / default target: MillQ-controlled Vietnam-hosted / self-hosted inference **where economically, legally, and operationally justified** — **not** a mandatory MVP hosting invariant.
+- Approved external providers **MAY** be used in production via `ModelGateway → ApprovedModelRegistry → ADR-0015 Egress Gate`.
+- Provider/deployment-neutral; specific models (OpenAI/Kimi/Qwen/etc.) are replaceable candidates, not invariants.
+- No restaurant-local model weights in MVP; POS does not depend on AI availability.
 
 ## 16. Voice & Multilingual Interaction (supporting)
 
-ADR-0021: voice is first-class **supporting** capability, not a command bypass.
+ADR-0021 (**Accepted**): voice is first-class **supporting** capability, not a command bypass.
 
 ```text
 mic → PTT/VAD → server ASR → router
-  → translation | VoiceCommandPreview | owner Q→EvidenceBuilder
-  → auth/confirm → normal application command → audit
+  → A Informational query | B Translation
+  → C Command preview | D Critical command
 ```
+
+- **A/B:** no domain command; no command confirmation required.
+- **C:** `VoiceCommandPreview` + auth; confirmation per command policy.
+- **D:** refund / reversal / inventory adjustment / sensitive financial — explicit confirmation, authorization, reason when policy requires, normal domain command, audit.
+- Voice/LLM/ASR never mutate Operational Core directly.
 
 VI speech in + written VI out (no VI TTS required in MVP); EN/RU speech + text (+ optional guest TTS). Voice offline must not block POS/KDS/printing.
 

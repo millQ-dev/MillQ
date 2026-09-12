@@ -3,7 +3,7 @@
 - **Status:** Proposed reference with Architecture v1.3
 - **Date:** 2026-09-04
 - **Supersedes:** Architecture v1.2 module map naming for extended modules
-- **Authority:** [`architecture-v1.3.md`](architecture-v1.3.md), ADR-0008 (Accepted), ADR-0011…0021 (Proposed)
+- **Authority:** [`architecture-v1.3.md`](architecture-v1.3.md), ADR-0008 (Accepted), ADR-0020/0021 (Accepted), ADR-0011…0019 (Proposed)
 - **Note:** Origin hosting ADR-0004 is unrelated.
 
 Each row is an internal module boundary inside the **modular monolith**.
@@ -265,8 +265,8 @@ No new deployable/microservice required by this map row.
 | --- | --- |
 | **Owns** | Voice interaction sessions (when implemented), speech provider adapter **interface**, translation/preview orchestration |
 | **Does not own** | Order/Inventory/Payment ledgers; AuthorizationPolicy |
-| **Key concepts** | PTT/VAD → server ASR → router → translation / VoiceCommandPreview / EvidenceBuilder path |
-| **Commands in** | StartVoiceCapture, SubmitVoiceUtterance, ConfirmVoiceCommandPreview |
+| **Key concepts** | PTT/VAD → server ASR → router → classes A Informational / B Translation / C Command preview / D Critical command |
+| **Commands in** | StartVoiceCapture, SubmitVoiceUtterance, ConfirmVoiceCommandPreview (C/D only mutate via normal app commands) |
 | **Facts out** | VoiceInteractionRecorded (AUDIT as applicable) |
 | **Depends on** | ModelGateway / SpeechProviderAdapter (ADR-0020), Identity/RBAC, Catalog/Menu resolvers, application commands |
 
