@@ -3,7 +3,7 @@
 - **Status:** Proposed reference with Architecture v1.3
 - **Date:** 2026-09-04
 - **Supersedes:** Architecture v1.2 module map naming for extended modules
-- **Authority:** [`architecture-v1.3.md`](architecture-v1.3.md), ADR-0008 (Accepted), ADR-0020/0021 (Accepted), ADR-0011…0019 (Proposed)
+- **Authority:** [`architecture-v1.3.md`](architecture-v1.3.md), ADR-0008 (Accepted), ADR-0012/0013/0020/0021 (Accepted), ADR-0011, 0014…0019 (Proposed)
 - **Note:** Origin hosting ADR-0004 is unrelated.
 
 Each row is an internal module boundary inside the **modular monolith**.
@@ -127,7 +127,7 @@ Costing writes **only derived revisions**, never invents inventory movements (AD
 | --- | --- |
 | **Owns** | Payment/refund transactions; TenderDefinition registry; PaymentAllocation |
 | **Does not own** | Order lines, cash drawer sessions, merchant/customer fund custody (forbidden — ADR-0013) |
-| **Key concepts** | TenderDefinition, Payment, PaymentAllocation, non-custody boundary |
+| **Key concepts** | TenderDefinition, Payment, PaymentAllocation, non-custody boundary (ADR-0013 **Accepted**: no wallet/internal balance; tips as allocation only; gift cards / marketplace settlement out of scope) |
 | **Commands in** | RecordPayment, RecordRefund, AllocatePayment |
 | **Facts out** | PaymentRecorded |
 | **Depends on** | Orders (settlement), Organization |
@@ -296,7 +296,7 @@ Voice and Intelligence remain **supporting / read-side** capabilities, not owner
 | **Central Production** | Multi-outlet production plans | |
 | **Operational / Production Intelligence** | Recommendations, EvidenceBundle, ModelGateway contract | ADR-0006 + ADR-0020 |
 | **Voice & Multilingual Interaction** | Speech/translation UX path | ADR-0021 |
-| **Jurisdiction** | JurisdictionProfile versions | ADR-0012 |
+| **Jurisdiction** | JurisdictionProfile (policy; versioned/effective-dated; LegalEntity-owned; Outlet inherits) | ADR-0012 **Accepted** |
 
 **Procurement** is the purchasing vertical for Block C (GoodsReceipt). Named distinctly from Supplier Management master data.
 

@@ -4,7 +4,7 @@
 **Canonical host:** Cursor Origin (`https://origin.cursor.com/millqdev/MillQ.git`)  
 **Backup host:** GitHub `https://github.com/millQ-dev/MillQ.git` (mirror only)  
 **Architecture PR:** https://cursor.com/codebase/millqdev/MillQ/pull/9 — **merged** (`77c69495fd22f6db81555c84a7decd28969e2ac4`)  
-**Updated:** 2026-09-12
+**Updated:** 2026-09-12 (ADR-0012 / ADR-0013 Accepted)
 
 ## Runtime / CI / backup
 
@@ -32,6 +32,8 @@
 | ADR-0008 | Accepted | Domain Boundaries Architecture v1.2 |
 | ADR-0009 | Accepted | Catalog, Units, SupplierItem |
 | ADR-0010 | Accepted | Document posting & correction |
+| ADR-0012 | Accepted | JurisdictionProfile vs Provider Adapters |
+| ADR-0013 | Accepted | Payment Non-Custody Boundary |
 | ADR-0020 | Accepted | Production Intelligence Execution & Model Gateway |
 | ADR-0021 | Accepted | Voice & Multilingual Interaction Boundary |
 
@@ -40,8 +42,6 @@
 | ADR | Topic |
 | --- | --- |
 | ADR-0011 | Migration Architecture |
-| ADR-0012 | JurisdictionProfile vs Provider Adapters |
-| ADR-0013 | Payment Non-Custody |
 | ADR-0014 | Vietnam Fiscalization Boundary |
 | ADR-0015 | Privacy, Residency, Egress, LLC & Security Control Plane |
 | ADR-0016 | Order Settlement & Split Bill |
