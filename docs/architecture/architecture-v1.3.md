@@ -28,10 +28,10 @@ Architecture v1.3 baseline for resumed implementation
 
 | Item | State |
 | --- | --- |
-| Origin main | `46f01ec` |
+| Origin main | `77c6949` (PR #9 merge) |
 | Block C | **Merged** (PR #7 → `a5e84b0`) and **v1.3-compatible** |
-| Architecture v1.3 alignment | **PR #9 open** — ADR-0020/0021 Accepted (PO deltas); remaining Proposed ADRs await final acceptance |
-| New application verticals | **STOP** until architecture acceptance |
+| Architecture v1.3 alignment | **Merged** (PR #9 → `77c6949`) |
+| New application verticals | **STOP** until PO launches next vertical |
 
 **Do not** describe Block C as the next vertical. After acceptance, the current candidate is:
 
