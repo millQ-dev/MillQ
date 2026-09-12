@@ -4,9 +4,9 @@
 - **Date:** 2026-09-04
 - **Canonical host:** Cursor Origin
 - **Base:** Architecture [v1.2](architecture-v1.2.md) (Accepted) + Block C merged @ `a5e84b0` / main tip at alignment start `46f01ec`
-- **Related ADRs:** ADR-0001…0004, 0006…0010 (Accepted); ADR-0020, ADR-0021 (Accepted — PO deltas 2026-09-12); ADR-0011…0019 (Proposed with this alignment)
+- **Related ADRs:** ADR-0001…0004, 0006…0010, 0012, 0013 (Accepted); ADR-0020, ADR-0021 (Accepted); ADR-0011, 0014…0019 (Proposed)
 - **Module map:** [`domain-module-map.md`](domain-module-map.md)
-- **Authority command:** KiU correcting command after gap-analysis (PO / strategic architecture); PO Intelligence + Voice directions (2026-09-12); PO APPROVE WITH CHANGES hosting + voice intent classes (2026-09-12)
+- **Authority command:** KiU correcting command after gap-analysis (PO / strategic architecture); PO Intelligence + Voice directions (2026-09-12); PO ACCEPT ADR-0012/0013 (2026-09-12)
 
 ## 1. Purpose
 
@@ -15,7 +15,7 @@ Architecture v1.3 **extends** v1.2 with boundaries that must be frozen **before*
 ```text
 v1.2 domain boundaries (Accepted)
         +
-v1.3 deltas (this document + ADR-0011…0019 Proposed + ADR-0020/0021 Accepted)
+v1.3 deltas (this document + ADR-0011, 0014…0019 Proposed + ADR-0012/0013/0020/0021 Accepted)
         =
 Architecture v1.3 baseline for resumed implementation
 ```
@@ -141,19 +141,24 @@ Exact legal qualification / certificates = **LEGAL GATE**, not architecture inve
 
 ## 10. Payments non-custody
 
-MillQ **does not** hold merchant or customer funds and **does not** become a payment intermediary on MVP. Tender flows are records of external provider / cash drawer outcomes (ADR-0013).
+MillQ **MVP is non-custodial** (ADR-0013 **Accepted**): no merchant/customer fund custody; no wallet / internal money balance; Payments records provider outcomes, allocations, reconciliation, and references only. Tips may be payment allocations without custody; deposits/prepayments only as records of external receipt. Gift cards and marketplace collection/distribution are **out of scope** pending separate ADR/legal review.
 
 ## 11. JurisdictionProfile vs provider adapters
 
 ```text
-Core domains
-JurisdictionProfile / jurisdiction policies   ← configuration & rules version
-Provider adapters (MISA, VietQR, GrabFood, ShopeeFood, …)  ← edge
+LegalEntity (primary jurisdiction ownership)
+  → JurisdictionProfile (policy; versioned + effective-dated)
+Location/Outlet normally inherits LegalEntity profile
+Provider adapters selected separately by capability (fiscal/payment/channel/…)
 ```
 
-**Forbidden:** one giant `VietnamAdapter` owning orders+fiscal+delivery+payments.
+- Profile = **policy**, not provider implementation.
+- Historical business/fiscal documents keep the profile/version at **business time**.
+- Location-level jurisdiction override is **not** a generic capability (needs separate ADR).
+- Changing a provider must **not** change Operational Core domain semantics.
+- **Forbidden:** giant `VietnamAdapter`.
 
-See ADR-0012.
+See ADR-0012 (**Accepted**).
 
 ## 12. Migration (product capability)
 
