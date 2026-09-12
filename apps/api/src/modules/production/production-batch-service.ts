@@ -783,6 +783,10 @@ export class ProductionBatchService {
         `${label}: actual dimension ${actual.dimension} must match planned ${planned.dimension}`,
       );
     }
+    // Identity: same unit needs no conversion table (any valid domain unit may match planned).
+    if (actual.unit === planned.unit) {
+      return;
+    }
     try {
       assertSameDimensionCompatibleUnits(actual.unit, planned.unit, planned.dimension);
       normalizeToBaseUnit(actual.quantity, actual.unit, actual.dimension);

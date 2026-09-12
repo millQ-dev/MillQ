@@ -585,4 +585,119 @@ describe('Block D1.2A ProductionBatch foundation (PostgreSQL)', () => {
       }),
     ).rejects.toMatchObject({ code: 'INCOMPATIBLE_UNIT' });
   });
+
+  it('20 — same-unit actuals accepted without conversion table; unsupported conversion rejected', async () => {
+    // 1) identical supported unit (kg) → accepted
+    const siPrep = await publishedStockTrackedPrep();
+    const siBatch = await service.createDraft({
+      tenantId: fx.tenantId,
+      warehouseId: fx.warehouseId,
+      preparationVersionId: siPrep.preparationVersionId,
+      inputActuals: [
+        {
+          lineNumber: 1,
+          actualQuantity: '1.25',
+          actualUnit: 'kg',
+          actualDimension: 'MASS',
+        },
+      ],
+    });
+    expect(siBatch.inputs[0]!.actualUnit).toBe('kg');
+    expect(siBatch.inputs[0]!.actualQuantity).toBe('1.25');
+
+    // 2) identical valid unit NOT in SI conversion table (oz) → accepted
+    const ozItemId = randomUUID();
+    await pool.query(
+      `INSERT INTO catalog_item (catalog_item_id, tenant_id, name, base_unit, dimension)
+       VALUES ($1,$2,'Spice oz','oz','MASS')`,
+      [ozItemId, fx.tenantId],
+    );
+    const outputId = await insertPrepOutputItem('Spice stock', 'g', 'MASS');
+    const ozDraft = await recipes.createPreparationDraft({
+      tenantId: fx.tenantId,
+      name: 'Spice mix',
+      materializationMode: 'STOCK_TRACKED',
+      outputCatalogItemId: outputId,
+      normativeInputQuantity: '1',
+      normativeInputUnit: 'kg',
+      normativeInputDimension: 'MASS',
+      normativeOutputQuantity: '800',
+      normativeOutputUnit: 'g',
+      normativeOutputDimension: 'MASS',
+      components: [
+        {
+          lineNumber: 1,
+          componentKind: 'CATALOG_ITEM',
+          catalogItemId: ozItemId,
+          quantity: '16',
+          unit: 'oz',
+          dimension: 'MASS',
+        },
+      ],
+    });
+    const ozPrep = await recipes.publishPreparationVersion(ozDraft.preparationVersionId);
+    const ozBatch = await service.createDraft({
+      tenantId: fx.tenantId,
+      warehouseId: fx.warehouseId,
+      preparationVersionId: ozPrep.preparationVersionId,
+      inputActuals: [
+        {
+          lineNumber: 1,
+          actualQuantity: '15',
+          actualUnit: 'oz',
+          actualDimension: 'MASS',
+        },
+      ],
+    });
+    expect(ozBatch.inputs[0]!.plannedUnit).toBe('oz');
+    expect(ozBatch.inputs[0]!.actualUnit).toBe('oz');
+    expect(ozBatch.inputs[0]!.actualQuantity).toBe('15');
+
+    // 3) compatible different units with supported conversion (kg → g) → accepted
+    // covered by test 19 create path; reaffirm here
+    const converted = await service.createDraft({
+      tenantId: fx.tenantId,
+      warehouseId: fx.warehouseId,
+      preparationVersionId: siPrep.preparationVersionId,
+      inputActuals: [
+        {
+          lineNumber: 1,
+          actualQuantity: '500',
+          actualUnit: 'g',
+          actualDimension: 'MASS',
+        },
+      ],
+    });
+    expect(converted.inputs[0]!.actualUnit).toBe('g');
+
+    // 4) same dimension, different unsupported conversion (oz → kg) → rejected
+    await expect(
+      service.updateDraft({
+        productionBatchId: ozBatch.productionBatchId,
+        inputActuals: [
+          {
+            lineNumber: 1,
+            actualQuantity: '1',
+            actualUnit: 'kg',
+            actualDimension: 'MASS',
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: 'INCOMPATIBLE_UNIT' });
+
+    // 5) different dimensions → rejected
+    await expect(
+      service.updateDraft({
+        productionBatchId: ozBatch.productionBatchId,
+        inputActuals: [
+          {
+            lineNumber: 1,
+            actualQuantity: '1',
+            actualUnit: 'L',
+            actualDimension: 'VOLUME',
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: 'INCOMPATIBLE_UNIT' });
+  });
 });
