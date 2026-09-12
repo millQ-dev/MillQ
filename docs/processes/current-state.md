@@ -7,7 +7,7 @@
 **Accept PR #13:** ADR-0015 / ADR-0019 @ `4510092`  
 **Accept PR #11:** ADR-0012 / ADR-0013 @ `cf3375f`  
 **Architecture v1.3 PR:** https://cursor.com/codebase/millqdev/MillQ/pull/9 — **merged** @ `77c6949`  
-**Updated:** 2026-09-12
+**Updated:** 2026-09-12 (ADR-0018 Accept PR pending)
 
 ## Runtime / CI / backup
 
@@ -20,6 +20,7 @@
 | ADR-0012 / ADR-0013 | **Accepted** (PR #11 → `cf3375f`) |
 | ADR-0015 / ADR-0019 | **Accepted** (PR #13 → `4510092`) |
 | ADR-0014 / ADR-0016 | **Accepted** (PR #15 → `f764599`) |
+| ADR-0018 | **Accepted** (this change-set — PR pending merge) |
 | New application verticals | **STOP** until PO launches next vertical |
 | Origin CI | **Attached** — Depot |
 | GitHub Actions | Dormant copies only |
@@ -43,6 +44,7 @@
 | ADR-0014 | Accepted | Vietnam Fiscalization Architecture Boundary |
 | ADR-0015 | Accepted | Privacy, Residency, Egress, LLC & Security Control Plane |
 | ADR-0016 | Accepted | Order Settlement & Split Bill |
+| ADR-0018 | Accepted | Offline Multi-Platform Client Runtime |
 | ADR-0019 | Accepted | Economic Facts & Contribution Margin |
 | ADR-0020 | Accepted | Production Intelligence Execution & Model Gateway |
 | ADR-0021 | Accepted | Voice & Multilingual Interaction Boundary |
@@ -53,7 +55,6 @@
 | --- | --- |
 | ADR-0011 | Migration Architecture |
 | ADR-0017 | Floor Plan & Table Engine |
-| ADR-0018 | Offline Multi-Platform Client Runtime |
 
 ### Settlement / non-custody invariant (ADR-0013 + ADR-0016)
 
@@ -87,7 +88,7 @@ A recorded **external** deposit/prepayment may be referenced/allocated later but
 3. ~~ADR-0012 / ADR-0013~~ Accepted  
 4. ~~ADR-0015 / ADR-0019~~ Accepted  
 5. ~~ADR-0014 / ADR-0016~~ **Accepted** (PR #15 → `f764599`)  
-6. Next PO review: **ADR-0018** Offline Multi-Platform Runtime  
-7. Then: **ADR-0017** Floor/Table Engine  
+6. ADR-0018 Accept PR — **await strategic review / merge**  
+7. Then PO review: **ADR-0017** Floor/Table Engine  
 8. Then: **ADR-0011** Migration Architecture  
 9. Application verticals remain **STOP** until PO launch  

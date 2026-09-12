@@ -4,9 +4,9 @@
 - **Date:** 2026-09-04
 - **Canonical host:** Cursor Origin
 - **Base:** Architecture [v1.2](architecture-v1.2.md) (Accepted) + Block C merged @ `a5e84b0` / main tip at alignment start `46f01ec`
-- **Related ADRs:** ADR-0001…0004, 0006…0010, 0012…0016, 0019 (Accepted); ADR-0020, ADR-0021 (Accepted); ADR-0011, 0017, 0018 (Proposed)
+- **Related ADRs:** ADR-0001…0004, 0006…0010, 0012…0016, 0018, 0019 (Accepted); ADR-0020, ADR-0021 (Accepted); ADR-0011, 0017 (Proposed)
 - **Module map:** [`domain-module-map.md`](domain-module-map.md)
-- **Authority command:** KiU correcting command after gap-analysis (PO / strategic architecture); PO ACCEPT ADR-0014/0016 deltas (2026-09-12)
+- **Authority command:** KiU correcting command after gap-analysis (PO / strategic architecture); PO ACCEPT ADR-0018 deltas (2026-09-12)
 
 ## 1. Purpose
 
@@ -15,7 +15,7 @@ Architecture v1.3 **extends** v1.2 with boundaries that must be frozen **before*
 ```text
 v1.2 domain boundaries (Accepted)
         +
-v1.3 deltas (this document + ADR-0011, 0017, 0018 Proposed + ADR-0012…0016, 0019, 0020, 0021 Accepted)
+v1.3 deltas (this document + ADR-0011, 0017 Proposed + ADR-0012…0016, 0018, 0019, 0020, 0021 Accepted)
         =
 Architecture v1.3 baseline for resumed implementation
 ```
@@ -60,7 +60,7 @@ Modular monolith; TypeScript monorepo; Origin SoT; ADR-0002/0003 measurement & c
 | PII Vault, VN-primary residency, egress gate, MillQ LLC boundary | ADR-0015 (**Accepted**) |
 | Order Settlement / Split Bill | ADR-0016 (**Accepted**) |
 | FloorPlan / Table Engine | ADR-0017 |
-| Offline multi-platform client runtime | ADR-0018 |
+| Offline multi-platform client runtime | ADR-0018 (**Accepted**) |
 | Economic facts / contribution margin / channel profit | ADR-0019 (**Accepted**) |
 | Security Control Plane / GovernmentRequestCase | ADR-0015 §Security (**Accepted**) |
 | Production Intelligence Execution / ModelGateway | ADR-0020 (does **not** supersede ADR-0006) |
@@ -181,14 +181,18 @@ Adapters do not encode KiU business rules. Historical import uses explicit A/B/C
 
 ## 13. Offline multi-platform
 
-`offline-foundation.md` remains conceptual. Before POS implementation, ADR-0018 freezes:
+ADR-0018 **Accepted** freezes architecture boundaries (not full sync implementation):
 
-- browser / iPad-iOS / Android runtimes
-- local persistence
-- sync authority & conflict/reconciliation
-- device identity
-- device gateway
+- First-class clients: Browser, iPad/iOS, Android (need not ship simultaneously).
+- Server remains authoritative after sync — no second permanent SoT.
+- Data classes: offline command capture; cached server-authoritative reference/config; external-service outcomes never fabricated.
+- Business chronology outranks upload order; sync concepts: Local Store, Outbox, Inbox, Sync Cursor, idempotency, entity-specific conflict policy (no universal LWW; no specific local DB frozen).
+- DeviceIdentity + attributable offline commands; encrypted-at-rest / scoped cache direction.
+- Professional offline cross-client mutation out of MVP scope.
+- Fiscal/payment/channel: queue OK; never fabricate ACCEPTED/SUCCESS.
+- POS/KDS/printing usable without AI/voice; no mandatory local LLM/ASR.
 
+`offline-foundation.md` remains the operational behavior reference.
 ## 14. Economic facts
 
 Economic metrics are **derived read-side** facts (ADR-0019 **Accepted**), never Operational Core mutable truth and never `product.cost`.
