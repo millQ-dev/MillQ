@@ -4,9 +4,9 @@
 - **Date:** 2026-09-04
 - **Canonical host:** Cursor Origin
 - **Base:** Architecture [v1.2](architecture-v1.2.md) (Accepted) + Block C merged @ `a5e84b0` / main tip at alignment start `46f01ec`
-- **Related ADRs:** ADR-0001…0004, 0006…0010, 0012…0019 (Accepted); ADR-0020, ADR-0021 (Accepted); ADR-0011 (Proposed)
+- **Related ADRs:** ADR-0001…0004, 0006…0021 (Accepted)
 - **Module map:** [`domain-module-map.md`](domain-module-map.md)
-- **Authority command:** KiU correcting command after gap-analysis (PO / strategic architecture); PO ACCEPT ADR-0017 deltas (2026-09-12)
+- **Authority command:** KiU correcting command after gap-analysis (PO / strategic architecture); PO ACCEPT ADR-0011 deltas (2026-09-12)
 
 ## 1. Purpose
 
@@ -15,7 +15,7 @@ Architecture v1.3 **extends** v1.2 with boundaries that must be frozen **before*
 ```text
 v1.2 domain boundaries (Accepted)
         +
-v1.3 deltas (this document + ADR-0011 Proposed + ADR-0012…0021 Accepted)
+v1.3 deltas (this document + ADR-0011…0021 Accepted)
         =
 Architecture v1.3 baseline for resumed implementation
 ```
@@ -55,7 +55,7 @@ Modular monolith; TypeScript monorepo; Origin SoT; ADR-0002/0003 measurement & c
 
 | Contour | Decision pointer |
 | --- | --- |
-| Migration Core + Canonical + Mapping + Historical policy | ADR-0011 |
+| Migration Core + Canonical + Mapping + Historical policy | ADR-0011 (**Accepted**) |
 | JurisdictionProfile ≠ provider adapters | ADR-0012 (**Accepted**) |
 | Payment non-custody (no merchant/customer funds) | ADR-0013 (**Accepted**) |
 | Vietnam fiscalization architecture boundary now | ADR-0014 (**Accepted**) |
@@ -173,12 +173,20 @@ See ADR-0012 (**Accepted**).
 
 ## 12. Migration (product capability)
 
+ADR-0011 **Accepted** freezes migration boundaries (not adapter implementations):
+
 ```text
-Source POS → Source Adapter → Staging → Normalize → Map → Validate
-  → Dry Run → Import Plan → Idempotent Apply → Reconcile → Audit
+Source Adapter → Staging → Normalize → Map → Validate
+  → Dry-run → Idempotent Apply → Reconcile → Audit
 ```
 
-Adapters do not encode KiU business rules. Historical import uses explicit A/B/C modes (ADR-0011).
+- No direct writes to Operational Core tables; apply via normal domain/import commands.
+- Extensible adapters (iPOS / MISA CUKCUK / KiotViet / Sapo / future) — first adapter not frozen; no source branching in Core.
+- Modes: **A** Master Data, **B** Opening State / Cutover, **C** Historical Transaction (source-dependent).
+- Staging + provenance + idempotency + reconciliation required; depends on ADR-0015.
+- Explicit MigrationRun target scope (Tenant/LE/Location/Warehouse); no silent cross-boundary.
+- Cutover lifecycle phases; no destructive Core rollback after apply.
+- Catalog/units per ADR-0009; no `product.cost`; opening/history costing per ADR-0003; chronology ≠ upload order.
 
 **No** ad-hoc `scripts/import-from-xxx.ts` as the architecture.
 
