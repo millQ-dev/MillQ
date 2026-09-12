@@ -1,11 +1,12 @@
 # MillQ Current State
 
-**Checkpoint:** ADR-0012 / ADR-0013 **Accepted** — Origin `main` @ `cf3375f` (2026-09-12)  
+**Checkpoint:** ADR-0015 / ADR-0019 **Accepted** — Origin `main` @ `4510092` (2026-09-12)  
 **Canonical host:** Cursor Origin (`https://origin.cursor.com/millqdev/MillQ.git`)  
 **Backup host:** GitHub `https://github.com/millQ-dev/MillQ.git` (mirror only)  
-**Accept PR:** https://cursor.com/codebase/millqdev/MillQ/pull/11 — **merged** (`cf3375fc18aa77e29a3f57291c993677acfa4b38`)  
+**Accept PR:** https://cursor.com/codebase/millqdev/MillQ/pull/13 — **merged** (`4510092249cc2b43fee3cf38ce01d63ef00fe7a7`)  
+**Prior Accept PR #11:** ADR-0012 / ADR-0013 @ `cf3375f`  
 **Architecture v1.3 PR:** https://cursor.com/codebase/millqdev/MillQ/pull/9 — **merged** @ `77c6949`  
-**Updated:** 2026-09-12 (ADR-0015 / ADR-0019 Accept PR pending)
+**Updated:** 2026-09-12
 
 ## Runtime / CI / backup
 
@@ -16,6 +17,7 @@
 | Block C Goods Receipt vertical | **Merged** + v1.3-compatible |
 | Architecture v1.3 alignment | **Merged** (PR #9 → `77c6949`) |
 | ADR-0012 / ADR-0013 | **Accepted** (PR #11 → `cf3375f`) |
+| ADR-0015 / ADR-0019 | **Accepted** (PR #13 → `4510092`) |
 | New application verticals | **STOP** until PO launches next vertical |
 | Origin CI | **Attached** — Depot |
 | GitHub Actions | Dormant copies only |
@@ -80,6 +82,8 @@ A recorded **external** deposit/prepayment (allowed under ADR-0013) **must not**
 
 1. ~~Block C~~ done  
 2. ~~Architecture v1.3 alignment PR #9~~ merged  
-3. ~~ADR-0012 / ADR-0013 Accept PR #11~~ **merged** @ `cf3375f`  
-4. Continue PO review of remaining Proposed ADRs (0011, 0014, 0016–0018)  
-5. Application verticals remain **STOP** until PO launch  
+3. ~~ADR-0012 / ADR-0013 Accept PR #11~~ merged @ `cf3375f`  
+4. ~~ADR-0015 / ADR-0019 Accept PR #13~~ **merged** @ `4510092`  
+5. Next PO review: **ADR-0014 + ADR-0016** (together)  
+6. Remaining Proposed: ADR-0011, ADR-0017, ADR-0018  
+7. Application verticals remain **STOP** until PO launch  
