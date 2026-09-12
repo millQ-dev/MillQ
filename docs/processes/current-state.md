@@ -1,10 +1,9 @@
 # MillQ Current State
 
-**Checkpoint:** Architecture v1.3 alignment **PR #9 — PO APPROVE WITH CHANGES applied; awaiting final PO approval**  
+**Checkpoint:** Architecture v1.3 alignment **merged** on Origin `main` @ `77c6949` (2026-09-12)  
 **Canonical host:** Cursor Origin (`https://origin.cursor.com/millqdev/MillQ.git`)  
 **Backup host:** GitHub `https://github.com/millQ-dev/MillQ.git` (mirror only)  
-**Origin main:** `46f01ec`  
-**Block C:** **Merged** (PR #7 → `a5e84b0`) and **v1.3-compatible**  
+**Architecture PR:** https://cursor.com/codebase/millqdev/MillQ/pull/9 — **merged** (`77c69495fd22f6db81555c84a7decd28969e2ac4`)  
 **Updated:** 2026-09-12
 
 ## Runtime / CI / backup
@@ -14,11 +13,11 @@
 | Foundation Operational Core | Merged |
 | Architecture v1.2 | **Accepted / Merged** |
 | Block C Goods Receipt vertical | **Merged** + v1.3-compatible |
-| Architecture v1.3 alignment | **PR #9 open** — ADR-0020/0021 **Accepted** (PO deltas); ADR-0011…0019 still Proposed |
-| New application verticals | **STOP** until final architecture acceptance + PO launch |
+| Architecture v1.3 alignment | **Merged** (PR #9 → `77c6949`) |
+| New application verticals | **STOP** until PO launches next vertical |
 | Origin CI | **Attached** — Depot |
 | GitHub Actions | Dormant copies only |
-| GitHub backup | Verify lag independently |
+| GitHub backup | Post-merge Origin→GitHub via **MillQ Origin Backup** App |
 
 ## Accepted decisions
 
@@ -53,7 +52,7 @@
 ## Architecture baseline
 
 - [`docs/architecture/architecture-v1.2.md`](../architecture/architecture-v1.2.md) (Accepted)
-- [`docs/architecture/architecture-v1.3.md`](../architecture/architecture-v1.3.md) (**Proposed** overall; §§15–16 backed by Accepted ADR-0020/0021)
+- [`docs/architecture/architecture-v1.3.md`](../architecture/architecture-v1.3.md) (merged with PR #9; §§15–16 backed by Accepted ADR-0020/0021)
 - [`docs/architecture/domain-module-map.md`](../architecture/domain-module-map.md)
 - [`docs/architecture/block-c-implementation.md`](../architecture/block-c-implementation.md)
 
@@ -64,7 +63,7 @@
 
 ## Explicitly not started (implementation)
 
-- Next vertical candidate after architecture acceptance + PO launch: **Recipes → Sale write-off → Food Cost**
+- Next vertical candidate after PO launch: **Recipes → Sale write-off → Food Cost**
 - Migration Core scaffolding & source adapters
 - Fiscal provider adapters
 - POS / FloorPlan / Grab / Shopee
@@ -73,7 +72,7 @@
 
 ## Next recommended sequence
 
-1. ~~Block C~~ done (merged, v1.3-compatible)  
-2. **Final PO approval of Architecture v1.3 / PR #9** — **DO NOT MERGE** until then; no new verticals  
+1. ~~Block C~~ done  
+2. ~~Architecture v1.3 alignment PR #9~~ **merged** @ `77c6949`  
 3. PO launches next application vertical (candidate: Recipes → Sale write-off → Food Cost)  
-4. Only then implement that vertical — **STOP** until then  
+4. Only then implement that vertical — **STOP** until PO launch  
