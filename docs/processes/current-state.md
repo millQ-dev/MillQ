@@ -1,14 +1,15 @@
 # MillQ Current State
 
-**Checkpoint:** ADR-0018 **Accepted** — Origin `main` @ `be58388` (2026-09-12)  
+**Checkpoint:** ADR-0017 **Accepted** — Origin `main` @ `1f683dc` (2026-09-12)  
 **Canonical host:** Cursor Origin (`https://origin.cursor.com/millqdev/MillQ.git`)  
 **Backup host:** GitHub `https://github.com/millQ-dev/MillQ.git` (mirror only)  
-**Accept PR #17:** ADR-0018 @ `be58388b02d7a6f878e14ba7cf86d5afc3aa591f`  
+**Accept PR #19:** ADR-0017 @ `1f683dc57b988708b5149ba2d7771b0b46ed66f5`  
+**Accept PR #17:** ADR-0018 @ `be58388`  
 **Accept PR #15:** ADR-0014 / ADR-0016 @ `f764599`  
 **Accept PR #13:** ADR-0015 / ADR-0019 @ `4510092`  
 **Accept PR #11:** ADR-0012 / ADR-0013 @ `cf3375f`  
 **Architecture v1.3 PR:** https://cursor.com/codebase/millqdev/MillQ/pull/9 — **merged** @ `77c6949`  
-**Updated:** 2026-09-12 (ADR-0017 Accept PR pending)
+**Updated:** 2026-09-12
 
 ## Runtime / CI / backup
 
@@ -22,7 +23,7 @@
 | ADR-0015 / ADR-0019 | **Accepted** (PR #13 → `4510092`) |
 | ADR-0014 / ADR-0016 | **Accepted** (PR #15 → `f764599`) |
 | ADR-0018 | **Accepted** (PR #17 → `be58388`) |
-| ADR-0017 | **Accepted** (this change-set — PR pending merge) |
+| ADR-0017 | **Accepted** (PR #19 → `1f683dc`) |
 | New application verticals | **STOP** until PO launches next vertical |
 | Origin CI | **Attached** — Depot |
 | GitHub Actions | Dormant copies only |
@@ -62,6 +63,10 @@
 
 A recorded **external** deposit/prepayment may be referenced/allocated later but **must not** become a MillQ custodial balance or wallet.
 
+### Floor / Table ownership invariant (ADR-0017)
+
+Floor/Table owns `TableAssignment` (refs `OrderId`). Orders owns Order truth only and does not depend on Floor/Table internal state.
+
 ## Architecture baseline
 
 - [`docs/architecture/architecture-v1.2.md`](../architecture/architecture-v1.2.md) (Accepted)
@@ -90,7 +95,7 @@ A recorded **external** deposit/prepayment may be referenced/allocated later but
 3. ~~ADR-0012 / ADR-0013~~ Accepted  
 4. ~~ADR-0015 / ADR-0019~~ Accepted  
 5. ~~ADR-0014 / ADR-0016~~ Accepted  
-6. ~~ADR-0018~~ **Accepted** (PR #17 → `be58388`)  
-7. ADR-0017 Accept PR — **await strategic review / merge**  
-8. Then: **ADR-0011** Migration Architecture  
+6. ~~ADR-0018~~ Accepted  
+7. ~~ADR-0017~~ **Accepted** (PR #19 → `1f683dc`)  
+8. Next PO review: **ADR-0011** Migration Architecture  
 9. Application verticals remain **STOP** until PO launch  

@@ -28,7 +28,7 @@ Architecture v1.3 baseline for resumed implementation
 
 | Item | State |
 | --- | --- |
-| Origin main tip | `be58388` (ADR-0018 Accept PR #17) |
+| Origin main tip | `1f683dc` (ADR-0017 Accept PR #19) |
 | Architecture v1.3 merge | `77c6949` (PR #9) |
 | Block C | **Merged** (PR #7 → `a5e84b0`) and **v1.3-compatible** |
 | Architecture v1.3 alignment | **Merged** (PR #9 → `77c6949`) |
@@ -36,6 +36,7 @@ Architecture v1.3 baseline for resumed implementation
 | ADR-0015 / ADR-0019 | **Accepted** (PR #13 → `4510092`) |
 | ADR-0014 / ADR-0016 | **Accepted** (PR #15 → `f764599`) |
 | ADR-0018 | **Accepted** (PR #17 → `be58388`) |
+| ADR-0017 | **Accepted** (PR #19 → `1f683dc`) |
 | New application verticals | **STOP** until PO launches next vertical |
 
 **Do not** describe Block C as the next vertical. After acceptance, the current candidate is:
