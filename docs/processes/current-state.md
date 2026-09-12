@@ -1,12 +1,12 @@
 # MillQ Current State
 
-**Checkpoint:** ADR-0015 / ADR-0019 **Accepted** — Origin `main` @ `4510092` (2026-09-12)  
+**Checkpoint:** ADR-0015 / ADR-0019 **Accepted** — Origin `main` tip after checkpoint @ `ea03d3e` (2026-09-12)  
 **Canonical host:** Cursor Origin (`https://origin.cursor.com/millqdev/MillQ.git`)  
 **Backup host:** GitHub `https://github.com/millQ-dev/MillQ.git` (mirror only)  
-**Accept PR:** https://cursor.com/codebase/millqdev/MillQ/pull/13 — **merged** (`4510092249cc2b43fee3cf38ce01d63ef00fe7a7`)  
-**Prior Accept PR #11:** ADR-0012 / ADR-0013 @ `cf3375f`  
+**Accept PR #13:** ADR-0015 / ADR-0019 @ `4510092`  
+**Accept PR #11:** ADR-0012 / ADR-0013 @ `cf3375f`  
 **Architecture v1.3 PR:** https://cursor.com/codebase/millqdev/MillQ/pull/9 — **merged** @ `77c6949`  
-**Updated:** 2026-09-12
+**Updated:** 2026-09-12 (ADR-0014 / ADR-0016 Accept PR pending)
 
 ## Runtime / CI / backup
 
@@ -18,6 +18,7 @@
 | Architecture v1.3 alignment | **Merged** (PR #9 → `77c6949`) |
 | ADR-0012 / ADR-0013 | **Accepted** (PR #11 → `cf3375f`) |
 | ADR-0015 / ADR-0019 | **Accepted** (PR #13 → `4510092`) |
+| ADR-0014 / ADR-0016 | **Accepted** (this change-set — PR pending merge) |
 | New application verticals | **STOP** until PO launches next vertical |
 | Origin CI | **Attached** — Depot |
 | GitHub Actions | Dormant copies only |
@@ -38,7 +39,9 @@
 | ADR-0010 | Accepted | Document posting & correction |
 | ADR-0012 | Accepted | JurisdictionProfile vs Provider Adapters |
 | ADR-0013 | Accepted | Payment Non-Custody Boundary |
+| ADR-0014 | Accepted | Vietnam Fiscalization Architecture Boundary |
 | ADR-0015 | Accepted | Privacy, Residency, Egress, LLC & Security Control Plane |
+| ADR-0016 | Accepted | Order Settlement & Split Bill |
 | ADR-0019 | Accepted | Economic Facts & Contribution Margin |
 | ADR-0020 | Accepted | Production Intelligence Execution & Model Gateway |
 | ADR-0021 | Accepted | Voice & Multilingual Interaction Boundary |
@@ -48,14 +51,12 @@
 | ADR | Topic |
 | --- | --- |
 | ADR-0011 | Migration Architecture |
-| ADR-0014 | Vietnam Fiscalization Boundary |
-| ADR-0016 | Order Settlement & Split Bill |
 | ADR-0017 | Floor Plan & Table Engine |
 | ADR-0018 | Offline Multi-Platform Client Runtime |
 
-### Forward constraint for future ADR-0016 (not an Accept of 0016)
+### Settlement / non-custody invariant (ADR-0013 + ADR-0016)
 
-A recorded **external** deposit/prepayment (allowed under ADR-0013) **must not** become a MillQ custodial balance or wallet when Settlement/Check concepts are designed. ADR-0016 remains **Proposed**.
+A recorded **external** deposit/prepayment may be referenced/allocated later but **must not** become a MillQ custodial balance or wallet.
 
 ## Architecture baseline
 
@@ -71,7 +72,7 @@ A recorded **external** deposit/prepayment (allowed under ADR-0013) **must not**
 
 ## Explicitly not started (implementation)
 
-- Next vertical candidate after PO launch: **Recipes → Sale write-off → Food Cost** (with Professional Account client-context ADR track as previously recommended)
+- Next vertical candidate after PO launch: **Recipes → Sale write-off → Food Cost**
 - Migration Core scaffolding & source adapters
 - Fiscal provider adapters
 - POS / FloorPlan / Grab / Shopee
@@ -81,9 +82,9 @@ A recorded **external** deposit/prepayment (allowed under ADR-0013) **must not**
 ## Next recommended sequence
 
 1. ~~Block C~~ done  
-2. ~~Architecture v1.3 alignment PR #9~~ merged  
-3. ~~ADR-0012 / ADR-0013 Accept PR #11~~ merged @ `cf3375f`  
-4. ~~ADR-0015 / ADR-0019 Accept PR #13~~ **merged** @ `4510092`  
-5. Next PO review: **ADR-0014 + ADR-0016** (together)  
+2. ~~Architecture v1.3 alignment~~ merged  
+3. ~~ADR-0012 / ADR-0013~~ Accepted  
+4. ~~ADR-0015 / ADR-0019~~ Accepted  
+5. ADR-0014 / ADR-0016 Accept PR — **await strategic review / merge**  
 6. Remaining Proposed: ADR-0011, ADR-0017, ADR-0018  
 7. Application verticals remain **STOP** until PO launch  

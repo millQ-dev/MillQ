@@ -3,7 +3,7 @@
 - **Status:** Proposed reference with Architecture v1.3
 - **Date:** 2026-09-04
 - **Supersedes:** Architecture v1.2 module map naming for extended modules
-- **Authority:** [`architecture-v1.3.md`](architecture-v1.3.md), ADR-0008 (Accepted), ADR-0012/0013/0015/0019/0020/0021 (Accepted), ADR-0011, 0014, 0016…0018 (Proposed)
+- **Authority:** [`architecture-v1.3.md`](architecture-v1.3.md), ADR-0008 (Accepted), ADR-0012…0016, 0019, 0020, 0021 (Accepted), ADR-0011, 0017, 0018 (Proposed)
 - **Note:** Origin hosting ADR-0004 is unrelated.
 
 Each row is an internal module boundary inside the **modular monolith**.
@@ -116,7 +116,7 @@ Costing writes **only derived revisions**, never invents inventory movements (AD
 | --- | --- |
 | **Owns** | Order, OrderLine, modifiers on lines, commercial snapshots, lifecycle; optional TableAssignment; SettlementGroup / Check / CheckLineAllocation coordination |
 | **Does not own** | Payments, FiscalDocument, kitchen ticket state, inventory movements, FloorPlan geometry |
-| **Key concepts** | Order (table optional), OrderLine snapshot, SettlementGroup, Check (ADR-0016) |
+| **Key concepts** | Order (table optional), OrderLine snapshot, SettlementGroup, Check, CheckLineAllocation, PaymentAllocation (ADR-0016 **Accepted**: Order ≠ Settlement; completion = allocated coverage; no cross-LE SettlementGroup) |
 | **Commands in** | OpenOrder, AddLine, CancelOrder, SendToProduction, OpenSettlement, SplitCheck |
 | **Facts out** | OrderOpened, OrderItemAdded, OrderCancelled, OrderPaid (signal; payment owned by Payments) |
 | **Depends on** | Menu/Pricing resolvers, Catalog, Organization, Identity, Floor/Table (optional refs) |
@@ -193,7 +193,7 @@ Costing writes **only derived revisions**, never invents inventory movements (AD
 | --- | --- |
 | **Owns** | FiscalPolicy, FiscalSeries, FiscalDocument, FiscalSubmission, correction chains, provider adapter **interface**, fiscal reconciliation |
 | **Does not own** | LegalEntity master data beyond fiscal binding; Order/Payment SoT; legal production clearance |
-| **Key concepts** | Architecture boundary now; provider impl later; LEGAL GATE G2 for go-live (ADR-0014) |
+| **Key concepts** | Architecture boundary now (Accepted ADR-0014); Order ≠ FiscalDocument; immutable docs + correction chains; offline queue statuses; LEGAL GATE G2 for go-live; provider impl later |
 | **Commands in** | SubmitFiscal, RecordFiscalCorrection |
 | **Facts out** | FiscalSubmitted, FiscalCorrected |
 | **Depends on** | Organization (LegalEntity), JurisdictionProfile, Payments/Orders settlement outcomes |
