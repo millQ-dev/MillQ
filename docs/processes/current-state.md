@@ -1,8 +1,9 @@
 # MillQ Current State
 
-**Checkpoint:** ADR-0011 **Accepted** — Origin `main` tip after checkpoint @ `3d0b6fe` (2026-09-12)  
+**Checkpoint:** ADR-0022 / ADR-0023 / ADR-0024 **Accepted** — Origin `main` @ `3590147` (2026-09-12)  
 **Canonical host:** Cursor Origin (`https://origin.cursor.com/millqdev/MillQ.git`)  
 **Backup host:** GitHub `https://github.com/millQ-dev/MillQ.git` (mirror only)  
+**Accept PR #23:** ADR-0022 / ADR-0023 / ADR-0024 @ `3590147`  
 **Accept PR #21:** ADR-0011 @ `cf5398a`  
 **Accept PR #19:** ADR-0017 @ `1f683dc`  
 **Accept PR #17:** ADR-0018 @ `be58388`  
@@ -10,7 +11,7 @@
 **Accept PR #13:** ADR-0015 / ADR-0019 @ `4510092`  
 **Accept PR #11:** ADR-0012 / ADR-0013 @ `cf3375f`  
 **Architecture v1.3 PR:** https://cursor.com/codebase/millqdev/MillQ/pull/9 — **merged** @ `77c6949`  
-**Updated:** 2026-09-12 (ADR-0022 / 0023 / 0024 Accept PR pending)
+**Updated:** 2026-09-12
 
 ## Runtime / CI / backup
 
@@ -26,7 +27,7 @@
 | ADR-0018 | **Accepted** (PR #17 → `be58388`) |
 | ADR-0017 | **Accepted** (PR #19 → `1f683dc`) |
 | ADR-0011 | **Accepted** (PR #21 → `cf5398a`) |
-| ADR-0022 / ADR-0023 / ADR-0024 | **Accepted** (this change-set — PR pending merge) |
+| ADR-0022 / ADR-0023 / ADR-0024 | **Accepted** (PR #23 → `3590147`) |
 | New application verticals | **STOP** until PO launches next vertical |
 | Origin CI | **Attached** — Depot |
 | GitHub Actions | Dormant copies only |
@@ -114,6 +115,6 @@ Structured Effective Recipe resolution; `UNKNOWN` never silently SAFE; AI/voice 
 1. ~~Block C~~ done  
 2. ~~Architecture v1.3 alignment~~ merged  
 3. ~~ADR-0011…0019~~ **Accepted** (PR #21 → `cf5398a`)  
-4. ~~ADR-0022 / ADR-0023 / ADR-0024~~ Accept PR — **await strategic review / merge**  
+4. ~~ADR-0022 / ADR-0023 / ADR-0024~~ **Accepted** (PR #23 → `3590147`)  
 5. Application verticals remain **STOP** until PO launch  
-6. Review policy: standard handoff review used for recent Accept PRs; **mandatory full diff review** due every third PR (or earlier if architectural ambiguity)  
+6. Review policy: PR #23 used standard handoff review; **NEXT substantive PR requires COMPLETE INDEPENDENT FULL-DIFF REVIEW** before merge  
